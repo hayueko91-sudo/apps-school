@@ -1,0 +1,790 @@
+<script>
+        let currentUser = null;
+        let appMenus = [];
+
+        let currentSlide = 0;
+        let slideInterval;
+
+        function updateSliderPosition() {
+            const track = document.getElementById('sliderTrack');
+            const dots = document.querySelectorAll('.dot-indicator');
+            if(track) track.style.transform = `translateX(-${currentSlide * 100}%)`;
+            dots.forEach((dot, index) => {
+                if(index === currentSlide) {
+                    dot.classList.add('bg-indigo-600', 'w-4');
+                    dot.classList.remove('bg-slate-300', 'w-2');
+                } else {
+                    dot.classList.add('bg-slate-300', 'w-2');
+                    dot.classList.remove('bg-indigo-600', 'w-4');
+                }
+            });
+        }
+
+        function nextSlide(totalSlides) {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            updateSliderPosition();
+            resetSliderInterval(totalSlides);
+        }
+
+        function prevSlide(totalSlides) {
+            const track = document.getElementById('sliderTrack');
+            totalSlides = totalSlides || (track ? track.children.length : 1);
+            currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+            updateSliderPosition();
+            resetSliderInterval(totalSlides);
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            updateSliderPosition();
+            const track = document.getElementById('sliderTrack');
+            resetSliderInterval(track ? track.children.length : 1);
+        }
+
+        function resetSliderInterval(totalSlides) {
+            if(slideInterval) clearInterval(slideInterval);
+            slideInterval = setInterval(() => { nextSlide(totalSlides) }, 5000);
+        }
+
+        function formatTanggalBiasa(tglStr) {
+            if(!tglStr || tglStr === '-') return '-';
+            const str = tglStr.toString();
+            const parts = str.split(' ');
+            if(parts.length > 0) {
+               const dateParts = parts[0].split('/');
+               if(dateParts.length === 3) {
+                   const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+                   return `${dateParts[0]} ${bulan[parseInt(dateParts[1], 10)-1]} ${dateParts[2]}`;
+               }
+            }
+            const d = new Date(str);
+            if (!isNaN(d.getTime())) {
+                const tanggal = String(d.getDate()).padStart(2, '0');
+                const bulanIndo = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+                const bulan = bulanIndo[d.getMonth()];
+                const tahun = d.getFullYear();
+                return `${tanggal} ${bulan} ${tahun}`;
+            }
+            return str;
+        }
+
+        function parseTugasDate(dateStr) {
+            if (!dateStr) return null;
+            let str = dateStr.toString().replace(/'/g, "").trim();
+            
+            if (str.includes('GMT') && str.includes('T')) {
+                let parts = str.split('T');
+                let d = new Date(parts[0]); 
+                if (!isNaN(d.getTime())) {
+                    let tParts = (parts[1] || "23:59").split(':');
+                    d.setHours(parseInt(tParts[0]||0, 10));
+                    d.setMinutes(parseInt(tParts[1]||0, 10));
+                    d.setSeconds(0);
+                    return d;
+                }
+            }
+
+            let datePart = str;
+            let timePart = "23:59";
+            if (str.includes('T')) {
+                let parts = str.split('T');
+                datePart = parts[0];
+                timePart = parts[1] || "23:59";
+            } else if (str.includes(' ')) {
+                let parts = str.split(' ');
+                if (parts.length > 1 && parts[parts.length-1].includes(':')) {
+                    timePart = parts.pop();
+                    datePart = parts.join(' ');
+                }
+            }
+
+            let tParts = timePart.split(':');
+            let h = parseInt(tParts[0] || 0, 10);
+            let m = parseInt(tParts[1] || 0, 10);
+
+            let year, month, day;
+            if (datePart.includes('-')) {
+                let dParts = datePart.split('-');
+                if (dParts[0].length === 4) { 
+                    year = parseInt(dParts[0], 10);
+                    month = parseInt(dParts[1], 10) - 1;
+                    day = parseInt(dParts[2], 10);
+                } else { 
+                    day = parseInt(dParts[0], 10);
+                    month = parseInt(dParts[1], 10) - 1;
+                    year = parseInt(dParts[2], 10);
+                    if (year < 100) year += 2000;
+                }
+            } else if (datePart.includes('/')) {
+                let dParts = datePart.split('/');
+                if (dParts[2].length === 4) { 
+                   day = parseInt(dParts[0], 10);
+                   month = parseInt(dParts[1], 10) - 1;
+                   year = parseInt(dParts[2], 10);
+                } else if (dParts[0].length === 4) { 
+                   year = parseInt(dParts[0], 10);
+                   month = parseInt(dParts[1], 10) - 1;
+                   day = parseInt(dParts[2], 10);
+                } else { 
+                   day = parseInt(dParts[0], 10);
+                   month = parseInt(dParts[1], 10) - 1;
+                   year = parseInt(dParts[2], 10);
+                   if (year < 100) year += 2000;
+                }
+            } else {
+                let dObj = new Date(str);
+                if (!isNaN(dObj.getTime())) return dObj;
+            }
+
+            if (year !== undefined && month !== undefined && day !== undefined) {
+                let finalDate = new Date(year, month, day, h, m, 0);
+                if (!isNaN(finalDate.getTime())) return finalDate;
+            }
+
+            let fallback = new Date(str);
+            if (!isNaN(fallback.getTime())) return fallback;
+            
+            return null;
+        }
+
+        window.onload = () => {
+            renderTemplate('landingPage', 'tpl-landing');
+            renderTemplate('loginScreen', 'tpl-login');
+            fetchLandingPengumuman(); 
+            applyGlobalAppConfig();   
+
+            // Panggilan Pencatat Pengunjung secara real-time saat web pertama kali diakses
+            let visitorSession = localStorage.getItem('visitor_session_id');
+            if(!visitorSession) {
+                visitorSession = 'user-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
+                localStorage.setItem('visitor_session_id', visitorSession);
+            }
+            
+            // REVISI: Menyimpan tanggal kunjungan terakhir dengan format teks (diberi tanda kutip di depan)
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            const todayText = "'" + new Date().toLocaleDateString('id-ID', options); 
+            let lastTrackedDate = localStorage.getItem('last_tracked_date');
+            
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                // Hanya lakukan pencatatan ke server jika tanggal teks hari ini berbeda dengan kunjungan sebelumnya
+                if (lastTrackedDate !== todayText) {
+                    google.script.run.withSuccessHandler(() => {
+                        localStorage.setItem('last_tracked_date', todayText); // Simpan tanggal sukses berformat teks
+                    }).trackVisitor(visitorSession);
+                }
+            }
+            
+            const currentYear = new Date().getFullYear();
+            if (document.getElementById('landingYear')) document.getElementById('landingYear').innerText = currentYear;
+            if (document.getElementById('loginYear')) document.getElementById('loginYear').innerText = currentYear;
+        };
+
+        function renderTemplate(targetId, templateId) {
+            const target = document.getElementById(targetId);
+            const template = document.getElementById(templateId);
+            
+            // Perbaikan ZettBOT: Cek apakah elemen target HTML-nya ada sebelum disisipi template
+            if (!target) {
+                console.warn(`ZettBOT Warning: Elemen target '${targetId}' tidak ditemukan di DOM. Melewati proses render.`);
+                return null;
+            }
+
+            target.innerHTML = '';
+            if (!template) {
+                target.innerHTML = `<div class="animate-fade flex flex-col items-center justify-center p-10 text-center h-full"><div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4"><i class="fa-solid fa-triangle-exclamation text-4xl"></i></div><h2 class="text-2xl font-bold text-slate-800 mb-2">Gagal Memuat Modul</h2><p class="text-slate-500 max-w-lg">Template <b>${templateId}</b> tidak ditemukan.</p></div>`;
+                return target;
+            }
+            target.appendChild(template.content.cloneNode(true));
+            return target;
+        }
+
+        function fetchLandingPengumuman() {
+            const area = document.getElementById('landingPengumumanArea');
+            if(!area) return;
+            if(typeof google === 'undefined' || typeof google.script === 'undefined') { area.innerHTML = '<p class="text-xs md:text-sm text-slate-500 text-center py-8">Gagal terhubung ke server.</p>'; return; }
+            
+            google.script.run.withSuccessHandler(res => {
+                if(res && res.status === 'success') {
+                    const aktif = res.data.filter(p => p.status === 'Aktif').reverse();
+                    if(aktif.length === 0) {
+                        area.innerHTML = '<div class="p-6 flex items-center justify-center h-full"><p class="text-xs md:text-sm text-slate-500 text-center">Belum ada pengumuman baru.</p></div>';
+                        return;
+                    }
+
+                    let slidesHtml = aktif.map((d, i) => {
+                        let imgHtml = d.gambar ? `<img src="${d.gambar}" class="w-full h-28 md:h-64 object-cover rounded-xl mb-3 md:mb-4 shadow-sm border border-slate-100" alt="Pengumuman">` : '';
+                        
+                        return `
+                        <div class="min-w-full w-full shrink-0 px-4 md:px-6 py-4 md:py-6 transition-opacity duration-300 box-border text-left h-full flex flex-col">
+                            ${imgHtml}
+                            <div class="flex flex-col md:flex-row justify-between items-start mb-1.5 md:mb-2 gap-1 md:gap-2">
+                                <h4 class="font-bold text-slate-800 text-sm md:text-lg leading-tight line-clamp-1 md:line-clamp-none" title="${d.judul}">${d.judul}</h4>
+                                <span class="text-[9px] md:text-xs font-semibold bg-indigo-100/80 backdrop-blur-sm text-indigo-700 px-2.5 md:px-3 py-1 rounded-full whitespace-nowrap border border-indigo-200/50">${formatTanggalBiasa(d.tanggal)}</span>
+                            </div>
+                            <p class="text-[11px] md:text-sm text-slate-600 leading-relaxed whitespace-pre-line line-clamp-2 md:line-clamp-none flex-1 overflow-hidden" title="${d.isi}">${d.isi}</p>
+                        </div>`;
+                    }).join('');
+
+                    let navHtml = aktif.length > 1 ? `
+                        <button onclick="prevSlide(${aktif.length})" class="absolute left-1 md:left-2 top-1/2 -translate-y-1/2 w-6 h-6 md:w-8 md:h-8 bg-white/80 hover:bg-white backdrop-blur-md rounded-full shadow-md border border-slate-100 flex items-center justify-center text-slate-600 hover:text-indigo-600 transition-all opacity-0 group-hover:opacity-100 z-10"><i class="fa-solid fa-chevron-left text-[10px] md:text-xs"></i></button>
+                        <button onclick="nextSlide(${aktif.length})" class="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 w-6 h-6 md:w-8 md:h-8 bg-white/80 hover:bg-white backdrop-blur-md rounded-full shadow-md border border-slate-100 flex items-center justify-center text-slate-600 hover:text-indigo-600 transition-all opacity-0 group-hover:opacity-100 z-10"><i class="fa-solid fa-chevron-right text-[10px] md:text-xs"></i></button>
+                        <div class="absolute bottom-2 md:bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                            ${aktif.map((_, i) => `<button onclick="goToSlide(${i})" class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all ${i===0 ? 'bg-indigo-600 w-3 md:w-4' : 'bg-slate-300'} dot-indicator"></button>`).join('')}
+                        </div>
+                    ` : '';
+
+                    area.innerHTML = `
+                        <div id="sliderTrack" class="flex transition-transform duration-500 ease-in-out w-full h-full items-start">
+                            ${slidesHtml}
+                        </div>
+                        ${navHtml}
+                    `;
+
+                    currentSlide = 0;
+                    if(aktif.length > 1) {
+                        resetSliderInterval(aktif.length);
+                    }
+
+                } else { 
+                    area.innerHTML = '<p class="text-xs md:text-sm text-red-500 text-center py-8">Gagal memuat pengumuman.</p>'; 
+                }
+            }).withFailureHandler(err => { 
+                area.innerHTML = '<p class="text-xs md:text-sm text-red-500 text-center py-8">Terjadi kesalahan koneksi.</p>'; 
+            }).getPengumumanData();
+        }
+
+        function showLoginModal() { document.getElementById('loginScreen').classList.remove('hidden'); }
+        function closeLoginModal() { document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('loginForm').reset(); }
+        function setBtnLoading(btnId, isLoading, defaultTxt) {
+            const btn = document.getElementById(btnId);
+            const span = btn.querySelector('span');
+            if(isLoading) { btn.disabled=true; btn.classList.add('opacity-75'); span.innerHTML=`<div class="loader-spin mr-2"></div> Proses..`; } 
+            else { btn.disabled=false; btn.classList.remove('opacity-75'); span.innerText=defaultTxt; }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            setBtnLoading('btnLogin', true, 'Masuk Sekarang');
+            google.script.run.withSuccessHandler(res => {
+                    setBtnLoading('btnLogin', false, 'Masuk Sekarang');
+                    if(res.status === 'success') { 
+                        currentUser = res.data; 
+                        initApp(); 
+                        
+                        // Menampilkan Notifikasi Berhasil Login di Pojok Kanan Atas dengan Timer Progress Bar
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Berhasil Login!',
+                            text: `Selamat datang, ${currentUser.nama}`,
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                            customClass: {
+                                popup: 'rounded-xl shadow-lg border border-slate-100'
+                            }
+                        });
+                    } 
+                    else {
+                        // Menampilkan Notifikasi Gagal Login di Pojok Kanan Atas dengan Timer Progress Bar
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'error',
+                            title: 'Login Gagal!',
+                            text: res.message,
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                            customClass: {
+                                popup: 'rounded-xl shadow-lg border border-slate-100'
+                            }
+                        });
+                    }
+                }).withFailureHandler(err => {
+                    setBtnLoading('btnLogin', false, 'Masuk Sekarang');
+                    // Menampilkan Notifikasi Error Server di Pojok Kanan Atas dengan Timer Progress Bar
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'error',
+                        title: 'Terjadi Kesalahan!',
+                        text: 'Gagal menghubungi server.',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                        customClass: {
+                            popup: 'rounded-xl shadow-lg border border-slate-100'
+                        }
+                    });
+                }).authenticateUser(user, pass);
+        }
+
+        function togglePassword() {
+            const pwdInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                pwdInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('flex');
+            document.getElementById('landingPage').classList.remove('hidden'); 
+            closeMobileMore(); fetchLandingPengumuman(); 
+            
+            // Menampilkan Notifikasi Berhasil Keluar di Pojok Kanan Atas dengan Timer Progress Bar
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Berhasil Keluar!',
+                text: 'Sampai jumpa kembali.',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                customClass: {
+                    popup: 'rounded-xl shadow-lg border border-slate-100'
+                }
+            });
+        }
+
+        function initApp() {
+            document.getElementById('landingPage').classList.add('hidden');
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('flex');
+            
+            if(document.getElementById('roleBadge')) document.getElementById('roleBadge').innerText = currentUser.role.toUpperCase();
+            if(document.getElementById('mobileRoleBadge')) document.getElementById('mobileRoleBadge').innerText = currentUser.role.toUpperCase();
+            document.getElementById('userNameDisplay').innerText = currentUser.nama;
+            document.getElementById('sheetUserName').innerText = currentUser.nama;
+
+            buildMenuData(); loadDashboard(); applyGlobalAppConfig(); 
+
+            // Cek Informasi Sekolah Khusus Siswa
+            if (currentUser.role.toLowerCase() === 'siswa') {
+                checkInformasiSiswa();
+            }
+        }
+
+        function checkInformasiSiswa() {
+            google.script.run.withSuccessHandler(res => {
+                if (res && res.status === 'success' && res.data && res.data.length > 0) {
+                    let htmlContent = res.data.map(info => {
+                        let judulHtml = info.judul && info.judul.trim() !== '' 
+                            ? `<h4 class="font-black text-indigo-700 text-lg md:text-xl mb-2 pr-8 leading-tight">${info.judul}</h4>` 
+                            : '';
+                        
+                        let isiHtml = info.isi && info.isi.trim() !== '' 
+                            ? `<p class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed mt-2">${info.isi}</p>` 
+                            : '';
+
+                        let imgHtml = info.gambar && info.gambar.trim() !== '' 
+                            ? `<img src="${info.gambar}" class="w-full h-auto rounded-xl mt-4 mb-2 shadow-sm border border-indigo-100 object-cover max-h-[250px]">` 
+                            : '';
+                        
+                        return `<div class="text-left mb-4 p-5 bg-indigo-50 border border-indigo-100 rounded-2xl relative overflow-hidden shadow-sm">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-white/40 rounded-bl-full flex items-start justify-end p-2 pointer-events-none">
+                                <i class="fa-solid fa-bullhorn text-indigo-200 text-2xl"></i>
+                            </div>
+                            
+                            ${judulHtml}
+                            
+                            <div class="text-[10px] font-bold text-slate-500 mb-2 flex items-center gap-2 relative z-10">
+                                <span class="bg-white px-2 py-1 rounded border border-indigo-100"><i class="fa-solid fa-clock text-indigo-400"></i> ${info.tanggal}</span> 
+                                <span class="bg-white px-2 py-1 rounded border border-indigo-100"><i class="fa-solid fa-user-tie text-indigo-400"></i> ${info.pembuat}</span>
+                            </div>
+                            
+                            ${isiHtml}
+                            ${imgHtml}
+                        </div>`;
+                    }).join('');
+
+                    Swal.fire({
+                        title: '<span class="text-2xl font-black text-slate-800 flex items-center justify-center gap-2"><i class="fa-solid fa-circle-info text-indigo-500"></i> Informasi Sekolah</span>',
+                        html: `<div class="max-h-[60vh] overflow-y-auto custom-scrollbar mt-2">${htmlContent}</div>`,
+                        showConfirmButton: true,
+                        confirmButtonText: '<i class="fa-solid fa-check mr-2"></i>Saya Mengerti',
+                        buttonsStyling: false,
+                        customClass: { 
+                            popup: 'rounded-3xl p-4 md:p-6 shadow-2xl border border-slate-100',
+                            confirmButton: 'w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md mt-4'
+                        },
+                        width: '600px',
+                        backdrop: `rgba(15, 23, 42, 0.8)`
+                    });
+                }
+            }).getInformasiAktifSiswa(currentUser); 
+        }
+
+        // =========================================================================
+        // REVISI: Modifikasi getAdminStats Untuk Menampilkan Total Kunjungan & Grafik Donat (Update Otomatis)
+        // =========================================================================
+        
+        let adminStatsInterval = null;
+
+        function getAdminStats() {
+            const container = document.getElementById('adminStatsArea');
+            if(!container) return;
+            
+            // Tampilkan loading HANYA JIKA container belum memiliki kartu statistik
+            if (!document.getElementById('statTotalSiswa')) {
+                container.innerHTML = `<div class="col-span-full p-6 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center h-32"><div class="loader-spin border-slate-300 border-t-indigo-600"></div></div>`;
+            }
+            
+            google.script.run.withSuccessHandler(res => {
+                if(res && res.status === 'success') {
+                    const data = res.data;
+                    
+                    // Jika elemen belum ada, buat struktur utamanya
+                    if (!document.getElementById('statTotalSiswa')) {
+                        container.innerHTML = `
+                            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+                                <div class="absolute top-0 right-0 w-16 h-16 bg-indigo-50 rounded-bl-full flex items-start justify-end p-4">
+                                    <i class="fa-solid fa-users text-indigo-500/50 text-2xl group-hover:scale-110 transition-transform"></i>
+                                </div>
+                                <div class="text-sm font-bold text-slate-500 mb-1">Total Siswa Aktif</div>
+                                <div id="statTotalSiswa" class="text-4xl font-black text-indigo-600 transition-transform duration-300 inline-block">${data.totalSiswa}</div>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+                                <div class="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full flex items-start justify-end p-4">
+                                    <i class="fa-solid fa-chalkboard-user text-blue-500/50 text-2xl group-hover:scale-110 transition-transform"></i>
+                                </div>
+                                <div class="text-sm font-bold text-slate-500 mb-1">Total Guru</div>
+                                <div id="statTotalGuru" class="text-4xl font-black text-blue-600 transition-transform duration-300 inline-block">${data.totalGuru}</div>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+                                <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-50 rounded-bl-full flex items-start justify-end p-4">
+                                    <i class="fa-solid fa-school text-emerald-500/50 text-2xl group-hover:scale-110 transition-transform"></i>
+                                </div>
+                                <div class="text-sm font-bold text-slate-500 mb-1">Total Kelas/Rombel</div>
+                                <div id="statTotalKelas" class="text-4xl font-black text-emerald-600 transition-transform duration-300 inline-block">${data.totalKelas}</div>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+                                <div class="absolute top-0 right-0 w-16 h-16 bg-rose-50 rounded-bl-full flex items-start justify-end p-4">
+                                    <i class="fa-solid fa-eye text-rose-500/50 text-2xl group-hover:scale-110 transition-transform"></i>
+                                </div>
+                                <div class="text-sm font-bold text-slate-500 mb-1">Total Kunjungan Web</div>
+                                <div id="statTotalVisitor" class="text-4xl font-black text-rose-600 transition-transform duration-300 inline-block">${data.totalVisitor || 0}</div>
+                            </div>
+                        `;
+                    }
+
+                    // Panggil fungsi gambar/update grafik kunjungan per hari (Donat)
+                    updateVisitorChart(data.chartLabels, data.chartValues);
+
+                    // Set interval polling jika belum ada, polling setiap 10 detik
+                    if (!adminStatsInterval) {
+                        adminStatsInterval = setInterval(() => {
+                            // Cek apakah masih di halaman dashboard
+                            if (document.getElementById('adminStatsArea')) {
+                                fetchAdminStatsSilent();
+                            } else {
+                                clearInterval(adminStatsInterval);
+                                adminStatsInterval = null;
+                            }
+                        }, 10000);
+                    }
+
+                } else {
+                    container.innerHTML = `<div class="col-span-full p-6 text-center text-red-500 bg-red-50 rounded-2xl border border-red-100">Gagal memuat statistik: ${res.message}</div>`;
+                }
+            }).withFailureHandler(err => {
+                container.innerHTML = `<div class="col-span-full p-6 text-center text-red-500 bg-red-50 rounded-2xl border border-red-100">Terjadi kesalahan sistem: ${err.message}</div>`;
+            }).getAdminStats();
+        }
+
+        // Fungsi polling secara diam-diam (tanpa mereset seluruh UI)
+        function fetchAdminStatsSilent() {
+            google.script.run.withSuccessHandler(res => {
+                if (res && res.status === 'success' && document.getElementById('adminStatsArea')) {
+                    const data = res.data;
+                    
+                    // Helper untuk animasi update angka
+                    const updateNumberValue = (elementId, newValue) => {
+                        const el = document.getElementById(elementId);
+                        if (el && el.innerText != newValue) {
+                            el.innerText = newValue;
+                            el.classList.add('scale-125', 'text-amber-500'); // Animasi pop & ganti warna sesaat
+                            setTimeout(() => el.classList.remove('scale-125', 'text-amber-500'), 400);
+                        }
+                    };
+
+                    updateNumberValue('statTotalSiswa', data.totalSiswa);
+                    updateNumberValue('statTotalGuru', data.totalGuru);
+                    updateNumberValue('statTotalKelas', data.totalKelas);
+                    updateNumberValue('statTotalVisitor', data.totalVisitor || 0);
+                    
+                    // Update grafik secara dinamis
+                    updateVisitorChart(data.chartLabels, data.chartValues);
+                }
+            }).getAdminStats();
+        }
+
+        // Fungsi Baru untuk Menggambar/Memperbarui Grafik Kunjungan Menggunakan Chart.js (Grafik Donat)
+        function updateVisitorChart(labels, values) {
+            const canvasEl = document.getElementById('visitorChart');
+            if(!canvasEl) return;
+
+            // Jika chart sudah ada, validasi apakah elemen canvas di DOM belum di-replace oleh navigasi UI
+            if (window.myVisitorChart) {
+                if (window.myVisitorChart.canvas === canvasEl) {
+                    // Update datanya secara dinamis
+                    window.myVisitorChart.data.labels = labels;
+                    window.myVisitorChart.data.datasets[0].data = values;
+                    window.myVisitorChart.update();
+                    return;
+                } else {
+                    // Jika user berpindah menu lalu kembali ke dashboard, canvas diganti dengan yang baru
+                    // Kita harus menghapus (destroy) instance lama agar grafik bisa tergambar di canvas baru
+                    window.myVisitorChart.destroy();
+                }
+            }
+
+            // Variasi warna estetik untuk 7 hari terakhir pada donat
+            const donutColors = [
+                'rgba(79, 70, 229, 0.85)',   // Indigo
+                'rgba(59, 130, 246, 0.85)',  // Blue
+                'rgba(16, 185, 129, 0.85)',  // Emerald
+                'rgba(245, 158, 11, 0.85)',  // Amber
+                'rgba(239, 68, 68, 0.85)',   // Red
+                'rgba(139, 92, 246, 0.85)',  // Violet
+                'rgba(236, 72, 153, 0.85)'   // Pink
+            ];
+
+            // Buat chart baru jenis 'doughnut'
+            window.myVisitorChart = new Chart(canvasEl, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pengunjung Unik / Hari',
+                        data: values,
+                        backgroundColor: donutColors,
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%', // Menjadikannya lebih modern dan ramping (ruang kosong di tengah)
+                    animation: {
+                        duration: 800 // Animasi transisi halus saat update data masuk
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    family: "'Plus Jakarta Sans', sans-serif",
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        // =========================================================================
+
+        function applyGlobalAppConfig() {
+            if(typeof google.script.run !== 'undefined') {
+                google.script.run.withSuccessHandler(res => {
+                    if(res && res.status === 'success') {
+                        const activeTA = res.data.find(ta => ta.status === 'Aktif');
+                        if(activeTA) {
+                            const taText = `TA: ${activeTA.tahun} (${activeTA.semester})`;
+                            const deskTA = document.getElementById('desktopActiveTA');
+                            const mobTA = document.getElementById('mobileActiveTA');
+                            if(deskTA) { deskTA.innerText = taText; deskTA.classList.remove('hidden'); }
+                            if(mobTA) { mobTA.innerText = taText; mobTA.classList.remove('hidden'); }
+                        }
+                    }
+                }).getTahunAjaranData();
+
+                google.script.run.withSuccessHandler(res => {
+                    if(res && res.status === 'success' && res.data) updateGlobalUIElements(res.data.nama, res.data.logo);
+                }).getSettingAplikasi();
+            }
+        }
+
+        function updateGlobalUIElements(nama, logoBase64) {
+            if(nama) {
+                document.title = nama;
+                ['sidebarAppName', 'mobileAppName', 'landingAppName', 'idCardAppName', 'footerLandingAppName', 'footerLoginAppName'].forEach(id => {
+                    const el = document.getElementById(id); if(el) el.innerText = nama;
+                });
+            }
+            if(logoBase64 && logoBase64.trim() !== '') {
+                [ {l:'sidebarAppLogo', i:'sidebarAppIcon', c:'desktopLogoContainer'},
+                  {l:'mobileAppLogo', i:'mobileAppIcon', c:'mobileLogoContainer'},
+                  {l:'landingAppLogo', i:'landingAppIcon', c:'landingLogoContainer'} ].forEach(x => {
+                    const l = document.getElementById(x.l), i = document.getElementById(x.i), c = document.getElementById(x.c);
+                    if(l) { l.src = logoBase64; l.classList.remove('hidden'); if(i) i.classList.add('hidden'); if(c) { c.classList.remove('bg-indigo-600', 'p-2'); c.classList.add('bg-white'); } }
+                });
+            }
+        }
+
+        function buildMenuData() {
+            const role = currentUser.role.toLowerCase();
+            if (role === 'admin') {
+                appMenus = [
+                    { id: 'dash', label: 'Dashboard', icon: 'fa-chart-pie', action: 'loadDashboard()', type: 'link' },
+                    { id: 'info', label: 'Kelola Informasi', icon: 'fa-bullhorn', action: "loadModule('kelola-informasi')", type: 'link' }, 
+                    { id: 'prof', label: 'Profil', icon: 'fa-sliders', type: 'accordion', subs: [
+                        { id: 'prof-1', label: 'Setting Aplikasi', action: "loadModule('admin-setting')" },
+                        { id: 'prof-2', label: 'Data Pengguna', action: "loadModule('admin-pengguna')" },
+                        { id: 'prof-3', label: 'Pengumuman', action: "loadModule('admin-pengumuman')" }, 
+                        { id: 'prof-4', label: 'Tahun Ajaran', action: "loadModule('admin-tahun-ajaran')" }
+                    ]},
+                    { id: 'ref', label: 'Data Referensi', icon: 'fa-users-gear', type: 'accordion', subs: [
+                        { id: 'ref-1', label: 'Data Guru', action: "loadModule('ref-guru')" },
+                        { id: 'ref-2', label: 'Data Siswa', action: "loadModule('ref-siswa')" },
+                        { id: 'ref-3', label: 'Maping Guru', action: "loadModule('ref-maping')" }
+                    ]},
+                    { id: 'adm', label: 'Administrasi', icon: 'fa-briefcase', type: 'accordion', subs: [
+                        { id: 'adm-1', label: 'Jadwal Guru', action: "loadModule('jadwal-guru')" },
+                        { id: 'adm-2', label: 'Jurnal Guru', action: "loadModule('admin-jurnal')" }, 
+                        { id: 'adm-3', label: 'Data Absensi Siswa', action: "loadModule('admin-absensi')" }
+                    ]},
+                    { id: 'mat', label: 'Materi Ajar', icon: 'fa-book-bookmark', type: 'accordion', subs: [ 
+                        { id: 'mat-1', label: 'Kelola Materi', action: "loadModule('materi-ajar')" } 
+                    ]},
+                    { id: 'lms', label: 'Managemen LMS', icon: 'fa-chalkboard-user', type: 'accordion', subs: [ 
+                        { id: 'lms-1', label: 'Buat Materi', action: "loadModule('lms-materi')" }, 
+                        { id: 'lms-2', label: 'Buat LMS', action: "loadModule('lms-buat')" }, 
+                        { id: 'lms-3', label: 'Jadwal LMS', action: "loadModule('lms-jadwal')" }, 
+                        { id: 'lms-4', label: 'Nilai LMS', action: "loadModule('lms-nilai')" } 
+                    ]},
+                    { id: 'nil', label: 'Managemen Penilaian', icon: 'fa-star', type: 'accordion', subs: [ 
+                        { id: 'nil-1', label: 'Bobot Penilaian', action: "loadModule('penilaian-bobot')" }, 
+                        { id: 'nil-2', label: 'Input Penilaian', action: "loadModule('penilaian-praktek')" }, 
+                        { id: 'nil-3', label: 'Laporan Nilai', action: "loadModule('penilaian-laporan')" } 
+                    ]},
+                    { id: 'tug', label: 'Managemen Tugas', icon: 'fa-list-check', type: 'accordion', subs: [ 
+                        { id: 'tug-1', label: 'Buat Tugas', action: "loadModule('modul-tugas')" }, 
+                        { id: 'tug-2', label: 'Nilai Tugas', action: "loadModule('tugas-nilai')" } 
+                    ]},
+                    // ZettBOT Modification: Memperbarui sub-menu CBT ke modul yang valid
+                    { id: 'cbt', label: 'Managemen CBT', icon: 'fa-solid fa-laptop', type: 'accordion', subs: [ 
+                        { id: 'cbt-1', label: 'Dashboard CBT', action: "loadModule('cbt-dashboard')" },
+                        { id: 'cbt-2', label: 'Bank Soal', action: "loadModule('cbt-bank-soal')" }, 
+                        { id: 'cbt-3', text: 'Jadwal Ujian', action: "loadModule('cbt-jadwal')" },
+                        { id: 'cbt-4', label: 'Monitoring', action: "loadModule('cbt-monitoring')" },
+                        { id: 'cbt-5', label: 'Hasil Ujian', action: "loadModule('cbt-hasil')" }
+                    ]},
+                    { id: 'sum', label: 'Managemen Sumatif', icon: 'fa-star-half-stroke', type: 'accordion', subs: [ 
+                        { id: 'sum-1', label: 'Nilai STS', action: "window.jenisSumatif = 'STS'; loadModule('modul-sumatif');" }, 
+                        { id: 'sum-2', label: 'Nilai PSKK', action: "window.jenisSumatif = 'PSKK'; loadModule('modul-sumatif');" } 
+                    ]},
+                    { id: 'lap', label: 'Laporan', icon: 'fa-file-lines', type: 'accordion', subs: [ 
+                        { id: 'lap-1', label: 'Leger Nilai Siswa', action: "loadModule('lap-leger')" }, 
+                        { id: 'lap-2', label: 'Absensi Siswa', action: "loadModule('lap-absensi')" }, 
+                        { id: 'lap-3', label: 'Jurnal Guru', action: "loadModule('lap-jurnal')" } 
+                    ]},
+                    { id: 'cfrm', label: 'Cetak Form', icon: 'fa-file-pdf', type: 'accordion', subs: [ 
+                        { id: 'cfrm-1', label: 'Form Absensi', action: "loadModule('form-absensi')" } 
+                    ]},
+                    { id: 'ctk', label: 'Cetak Akun', icon: 'fa-print', type: 'accordion', subs: [ { id: 'ctk-1', label: 'Cetak Kartu Akun', action: "loadModule('admin-id')" } ]}
+                ];
+            } else if (role === 'guru') {
+                appMenus = [
+                    { id: 'dash', label: 'Beranda', icon: 'fa-house', action: 'loadDashboard()', type: 'link' },
+                    { id: 'g-info', label: 'Kelola Informasi', icon: 'fa-bullhorn', action: "loadModule('kelola-informasi')", type: 'link' }, 
+                    { id: 'adm', label: 'Administrasi', icon: 'fa-briefcase', type: 'accordion', subs: [
+                        { id: 'g-adm-1', label: 'Jadwal Mengajar', action: "loadModule('jadwal-guru')" },
+                        { id: 'g-adm-2', label: 'Jurnal Guru', action: "loadModule('admin-jurnal')" }, 
+                        { id: 'g-adm-3', label: 'Data Absensi Siswa', action: "loadModule('admin-absensi')" }
+                    ]},
+                    { id: 'mat', label: 'Materi Ajar', icon: 'fa-book-bookmark', type: 'accordion', subs: [ 
+                        { id: 'g-mat-1', label: 'Kelola Materi', action: "loadModule('materi-ajar')" } 
+                    ]},
+                    { id: 'lms', label: 'Managemen LMS', icon: 'fa-chalkboard-user', type: 'accordion', subs: [ 
+                        { id: 'lms-1', label: 'Buat Materi', action: "loadModule('lms-materi')" },
+                        { id: 'g-lms-2', label: 'Buat LMS', action: "loadModule('lms-buat')" }, 
+                        { id: 'g-lms-3', label: 'Jadwal LMS', action: "loadModule('lms-jadwal')" }, 
+                        { id: 'g-lms-4', label: 'Nilai LMS', action: "loadModule('lms-nilai')" } 
+                    ]},
+                    { id: 'nil', label: 'Managemen Penilaian', icon: 'fa-star', type: 'accordion', subs: [ 
+                        { id: 'g-nil-1', label: 'Bobot Penilaian', action: "loadModule('penilaian-bobot')" }, 
+                        { id: 'g-nil-2', label: 'Input Penilaian', action: "loadModule('penilaian-praktek')" }, 
+                        { id: 'g-nil-3', label: 'Laporan Nilai', action: "loadModule('penilaian-laporan')" } 
+                    ]},
+                    { id: 'tug', label: 'Managemen Tugas', icon: 'fa-list-check', type: 'accordion', subs: [ 
+                        { id: 'g-tug-1', label: 'Buat Tugas', action: "loadModule('modul-tugas')" }, 
+                        { id: 'g-tug-2', label: 'Nilai Tugas', action: "loadModule('tugas-nilai')" }
+                    ]},
+                    // ZettBOT Modification: Memperbarui sub-menu CBT ke modul yang valid untuk Guru
+                    { id: 'cbt', label: 'Managemen CBT', icon: 'fa-solid fa-laptop', type: 'accordion', subs: [ 
+                        { id: 'cbt-1', label: 'Dashboard CBT', action: "loadModule('cbt-dashboard')" },
+                        { id: 'cbt-2', label: 'Bank Soal', action: "loadModule('cbt-bank-soal')" }, 
+                        { id: 'cbt-3', label: 'Jadwal Ujian', action: "loadModule('cbt-jadwal')" },
+                        { id: 'cbt-4', label: 'Monitoring', action: "loadModule('cbt-monitoring')" },
+                        { id: 'cbt-5', label: 'Hasil Ujian', action: "loadModule('cbt-hasil')" }
+                    ]},
+                    { id: 'sum', label: 'Managemen Sumatif', icon: 'fa-star-half-stroke', type: 'accordion', subs: [ 
+                        { id: 'g-sum-1', label: 'Nilai STS', action: "window.jenisSumatif = 'STS'; loadModule('modul-sumatif');" }, 
+                        { id: 'g-sum-2', label: 'Nilai PSKK', action: "window.jenisSumatif = 'PSKK'; loadModule('modul-sumatif');" } 
+                    ]},
+                    { id: 'lap', label: 'Laporan', icon: 'fa-file-lines', type: 'accordion', subs: [ 
+                        { id: 'g-lap-1', label: 'Leger Nilai Siswa', action: "loadModule('lap-leger')" }, 
+                        { id: 'g-lap-2', label: 'Absensi Siswa', action: "loadModule('lap-absensi')" }, 
+                        { id: 'g-lap-3', label: 'Jurnal Guru', action: "loadModule('lap-jurnal')" } 
+                    ]},
+                    { id: 'cfrm', label: 'Cetak Form', icon: 'fa-file-pdf', type: 'accordion', subs: [ 
+                        { id: 'g-cfrm-1', label: 'Form Absensi', action: "loadModule('form-absensi')" } 
+                    ]}
+                ];
+            } else {
+                // MODIFIKASI: Menambahkan Menu "Laporan Belajar" untuk Siswa
+                appMenus = [
+                    { id: 'dash', label: 'Belajar', icon: 'fa-book-open', action: 'loadDashboard()', type: 'link' },
+                    { id: 'cbt-siswa', label: 'Ujian CBT', icon: 'fa-laptop-code', action: 'bukaMenuUjianCBTSiswa()', type: 'link' },
+                    { id: 'lap-belajar', label: 'Laporan Belajar', icon: 'fa-chart-line', action: 'loadLaporanBelajar()', type: 'link' }
+                ];
+            }
+            // Asumsi fungsi ini didefinisikan pada Main_Part2.html
+            if(typeof renderDesktopMenu === 'function') renderDesktopMenu(); 
+            if(typeof renderMobileMenu === 'function') renderMobileMenu();
+        }
+
+        // FUNGSI BARU: Untuk memuat dan merender modul Dashboard Laporan Belajar Siswa
+        function loadLaporanBelajar() {
+            // Mengatur status menu aktif di sidebar (jika fungsi setActiveMenu tersedia)
+            if (typeof setActiveMenu === 'function') {
+                setActiveMenu('lap-belajar');
+            } else {
+                // Alternatif manual penandaan menu aktif jika tidak ada fungsi bawaan
+                document.querySelectorAll('.menu-item-el').forEach(el => el.classList.remove('bg-indigo-50', 'text-indigo-600'));
+                const activeMenuEl = document.getElementById('menu-lap-belajar') || document.querySelector('[onclick="loadLaporanBelajar()"]');
+                if (activeMenuEl) activeMenuEl.classList.add('bg-indigo-50', 'text-indigo-600');
+            }
+
+            // Temukan container utama di template Anda secara adaptif
+            const containerId = document.getElementById('mainContentArea') ? 'mainContentArea' : 
+                               (document.getElementById('contentArea') ? 'contentArea' : 
+                               (document.getElementById('appBody') ? 'appBody' : 'mainApp'));
+
+            const target = renderTemplate(containerId, 'tpl-lap-belajar');
+            if (target && typeof initLaporanBelajar === 'function') {
+                initLaporanBelajar();
+            }
+        }
+</script>
