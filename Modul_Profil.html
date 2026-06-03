@@ -1,0 +1,1442 @@
+<!-- TEMPLATE: Data Pengguna -->
+<template id="tpl-admin-pengguna">
+    <div class="animate-fade">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <h2 class="text-xl md:text-2xl font-bold text-slate-800">Data Pengguna</h2>
+            <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto items-center">
+                <!-- Filter Role -->
+                <select id="filterRolePengguna" class="w-full md:w-36 px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm shadow-sm bg-white cursor-pointer">
+                    <option value="">Semua Role</option>
+                    <option value="admin">Admin</option>
+                    <option value="guru">Guru</option>
+                    <option value="siswa">Siswa</option>
+                </select>
+                
+                <!-- Tombol Tampil -->
+                <button onclick="applyFilterPengguna(true)" class="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl font-medium shadow-md transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-filter"></i> Tampil
+                </button>
+
+                <!-- Pencarian -->
+                <div class="relative w-full md:w-56">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="searchPengguna" oninput="fastSearchPengguna()" class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm shadow-sm" placeholder="Cari pengguna...">
+                </div>
+
+                <!-- Tambah Pengguna -->
+                <button onclick="openModalPengguna('add')" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-md transition-all flex items-center justify-center gap-2 shrink-0">
+                    <i class="fa-solid fa-plus"></i> Tambah
+                </button>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-y-auto max-h-[60vh] custom-scrollbar">
+                <table class="w-full text-left min-w-[700px]">
+                    <thead class="sticky top-0 z-10 bg-slate-50 shadow-sm border-b border-slate-200">
+                        <tr class="text-xs md:text-sm text-slate-500">
+                            <th class="p-4 w-12 font-semibold text-center">No</th>
+                            <th class="p-4 font-semibold">Nama Pengguna</th>
+                            <th class="p-4 font-semibold">Username</th>
+                            <th class="p-4 font-semibold">Password</th>
+                            <th class="p-4 font-semibold text-center">Role</th>
+                            <th class="p-4 font-semibold text-center">Status</th>
+                            <th class="p-4 font-semibold text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="penggunaTableBody">
+                        <!-- Data akan dimuat via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form (Tambah & Edit) -->
+    <div id="modalPengguna" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-[100] hidden flex items-center justify-center p-4 transition-opacity opacity-0">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform scale-95 transition-transform" id="modalPenggunaContent">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-slate-800" id="modalPenggunaTitle">Tambah Pengguna</h3>
+                <button onclick="closeModalPengguna()" class="text-slate-400 hover:text-slate-600 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="formPengguna" onsubmit="event.preventDefault(); savePengguna();">
+                <div class="p-6 space-y-4">
+                    <input type="hidden" id="userId">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nama Pengguna</label>
+                        <input type="text" id="userNama" required class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="Masukkan nama lengkap">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                        <input type="text" id="userUsername" required class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="Misal: guru1">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                        <input type="text" id="userPassword" required class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="Minimal 6 karakter">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                            <select id="userRole" class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                                <option value="admin">Admin</option>
+                                <option value="guru">Guru</option>
+                                <option value="siswa">Siswa</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                            <select id="userStatus" class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                                <option value="Aktif">Aktif</option>
+                                <option value="Non-Aktif">Non-Aktif</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                    <button type="button" onclick="closeModalPengguna()" class="px-4 py-2 text-slate-600 font-medium hover:bg-slate-200 rounded-lg transition-colors">Batal</button>
+                    <button type="submit" id="btnSavePengguna" class="px-6 py-2 bg-indigo-600 text-white font-medium hover:bg-indigo-700 rounded-lg transition-colors shadow-sm flex items-center gap-2">
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus -->
+    <div id="modalDelete" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-[100] hidden flex items-center justify-center p-4 transition-opacity opacity-0">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform scale-95 transition-transform text-center p-6" id="modalDeleteContent">
+            <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 class="font-bold text-lg text-slate-800 mb-2">Hapus Pengguna?</h3>
+            <p class="text-slate-500 text-sm mb-6">Data pengguna yang dihapus tidak dapat dikembalikan. Apakah Anda yakin ingin melanjutkan?</p>
+            <input type="hidden" id="deleteUserId">
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModalDelete()" class="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-colors w-full">Batal</button>
+                <button onclick="executeDeletePengguna()" id="btnConfirmDelete" class="px-5 py-2.5 bg-red-600 text-white font-medium hover:bg-red-700 rounded-xl transition-colors shadow-sm w-full flex items-center justify-center gap-2">Hapus</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- TEMPLATE DATA TAHUN AJARAN -->
+<template id="tpl-admin-tahun-ajaran">
+    <div class="animate-fade">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <h2 class="text-xl md:text-2xl font-bold text-slate-800">Tahun Ajaran</h2>
+            <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                <div class="relative w-full md:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="searchTA" oninput="filterTable('searchTA', 'taTableBody')" class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm shadow-sm" placeholder="Cari tahun ajaran...">
+                </div>
+                <button onclick="openModalTA('add')" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-md transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Tambah TA
+                </button>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-y-auto max-h-[60vh] custom-scrollbar">
+                <table class="w-full text-left min-w-[700px]">
+                    <thead class="sticky top-0 z-10 bg-slate-50 shadow-sm border-b border-slate-200">
+                        <tr class="text-xs md:text-sm text-slate-500">
+                            <th class="p-4 w-12 font-semibold text-center">No</th>
+                            <th class="p-4 font-semibold">Tahun Ajaran</th>
+                            <th class="p-4 font-semibold text-center">Semester</th>
+                            <th class="p-4 font-semibold text-center">Status</th>
+                            <th class="p-4 font-semibold text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="taTableBody">
+                        <!-- Data akan dimuat via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form (Tambah & Edit TA) -->
+    <div id="modalTA" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-[100] hidden flex items-center justify-center p-4 transition-opacity opacity-0">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform scale-95 transition-transform" id="modalTAContent">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-slate-800" id="modalTATitle">Tambah Tahun Ajaran</h3>
+                <button onclick="closeModalTA()" class="text-slate-400 hover:text-slate-600 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="formTA" onsubmit="event.preventDefault(); saveTA();">
+                <div class="p-6 space-y-4">
+                    <input type="hidden" id="taId">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Tahun Ajaran</label>
+                        <input type="text" id="taTahun" required class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="Misal: 2023/2024">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Semester</label>
+                            <select id="taSemester" class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                                <option value="Ganjil">Ganjil</option>
+                                <option value="Genap">Genap</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                            <select id="taStatus" class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                                <option value="Aktif">Aktif</option>
+                                <option value="Non-Aktif">Non-Aktif</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Info Filter Data -->
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mt-2 flex items-start gap-2 text-indigo-700 text-sm">
+                        <i class="fa-solid fa-circle-info mt-0.5"></i>
+                        <p><strong>Info Filter Data:</strong> Tahun Ajaran yang berstatus <strong>Aktif</strong> akan otomatis memfilter data yang tampil di seluruh menu utama (kecuali data Profil, Guru, dan Siswa).</p>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                    <button type="button" onclick="closeModalTA()" class="px-4 py-2 text-slate-600 font-medium hover:bg-slate-200 rounded-lg transition-colors">Batal</button>
+                    <button type="submit" id="btnSaveTA" class="px-6 py-2 bg-indigo-600 text-white font-medium hover:bg-indigo-700 rounded-lg transition-colors shadow-sm flex items-center gap-2">
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus TA -->
+    <div id="modalDeleteTA" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-[100] hidden flex items-center justify-center p-4 transition-opacity opacity-0">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform scale-95 transition-transform text-center p-6" id="modalDeleteTAContent">
+            <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 class="font-bold text-lg text-slate-800 mb-2">Hapus Tahun Ajaran?</h3>
+            <p class="text-slate-500 text-sm mb-6">Data ini tidak dapat dikembalikan. Apakah Anda yakin ingin menghapus tahun ajaran ini?</p>
+            <input type="hidden" id="deleteTaId">
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModalDeleteTA()" class="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-colors w-full">Batal</button>
+                <button onclick="executeDeleteTA()" id="btnConfirmDeleteTA" class="px-5 py-2.5 bg-red-600 text-white font-medium hover:bg-red-700 rounded-xl transition-colors shadow-sm w-full flex items-center justify-center gap-2">Hapus</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- TEMPLATE SETTING APLIKASI -->
+<template id="tpl-admin-setting">
+    <div class="animate-fade">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <h2 class="text-xl md:text-2xl font-bold text-slate-800">Setting Aplikasi</h2>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden max-w-2xl p-6 md:p-8">
+            <form id="formSetting" onsubmit="event.preventDefault(); saveSettingApp();">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Nama Aplikasi</label>
+                        <input type="text" id="settingAppName" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="Memuat nama aplikasi...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Logo Aplikasi</label>
+                        <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+                            <!-- Image Preview Area -->
+                            <div class="w-32 h-32 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 shadow-inner relative group">
+                                <img id="settingLogoPreview" src="" class="w-full h-full object-cover hidden z-10 bg-white">
+                                <i id="settingLogoIcon" class="fa-solid fa-image text-4xl text-slate-300 absolute"></i>
+                            </div>
+                            <!-- Upload Controls -->
+                            <div class="flex-1 w-full space-y-3">
+                                <input type="file" id="settingLogoFile" accept="image/*" onchange="convertLogoToBase64(event)" class="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 transition-all cursor-pointer bg-slate-50 border border-slate-100 rounded-xl">
+                                <p class="text-xs text-slate-400 leading-relaxed">Sistem akan secara otomatis meresize logo ke resolusi optimal agar tidak error dan tetap tajam.</p>
+                                <textarea id="settingLogoBase64" class="hidden"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pt-6 border-t border-slate-100 flex justify-end">
+                        <button type="submit" id="btnSaveSetting" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-medium shadow-md transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</template>
+
+<!-- TEMPLATE PENGUMUMAN (BARU) -->
+<template id="tpl-admin-pengumuman">
+    <div class="animate-fade">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <h2 class="text-xl md:text-2xl font-bold text-slate-800">Manajemen Pengumuman</h2>
+            <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                <div class="relative w-full md:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="searchPengumuman" oninput="filterTable('searchPengumuman', 'pengumumanTableBody')" class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm shadow-sm" placeholder="Cari pengumuman...">
+                </div>
+                <button onclick="openModalPengumuman('add')" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-md transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Tambah Baru
+                </button>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-y-auto max-h-[60vh] custom-scrollbar">
+                <table class="w-full text-left min-w-[800px]">
+                    <thead class="sticky top-0 z-10 bg-slate-50 shadow-sm border-b border-slate-200">
+                        <tr class="text-xs md:text-sm text-slate-500">
+                            <th class="p-4 w-12 font-semibold text-center">No</th>
+                            <th class="p-4 font-semibold w-24 text-center">Gambar</th>
+                            <th class="p-4 font-semibold">Judul & Isi</th>
+                            <th class="p-4 font-semibold text-center">Tanggal</th>
+                            <th class="p-4 font-semibold text-center">Status</th>
+                            <th class="p-4 font-semibold text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pengumumanTableBody">
+                        <!-- Data akan dimuat via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form (Tambah & Edit Pengumuman) -->
+    <div id="modalPengumuman" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-[100] hidden flex items-center justify-center p-4 transition-opacity opacity-0">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform flex flex-col max-h-[90vh]" id="modalPengumumanContent">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-lg text-slate-800" id="modalPengumumanTitle">Tambah Pengumuman</h3>
+                <button onclick="closeModalPengumuman()" class="text-slate-400 hover:text-slate-600 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="overflow-y-auto flex-1 custom-scrollbar">
+                <form id="formPengumuman" onsubmit="event.preventDefault(); savePengumuman();">
+                    <div class="p-6 space-y-4">
+                        <input type="hidden" id="pengumumanId">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Judul Pengumuman</label>
+                            <input type="text" id="pengumumanJudul" required class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="Masukkan judul">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Isi Pengumuman</label>
+                            <textarea id="pengumumanIsi" required rows="4" class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none" placeholder="Tuliskan detail pengumuman..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Gambar (Opsional)</label>
+                            <div class="flex items-start gap-4">
+                                <div class="w-24 h-24 rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center overflow-hidden shrink-0 relative group">
+                                    <img id="pengumumanGambarPreview" src="" class="w-full h-full object-cover hidden z-10 bg-white">
+                                    <i id="pengumumanGambarIcon" class="fa-solid fa-image text-2xl text-slate-300 absolute"></i>
+                                </div>
+                                <div class="flex-1 w-full">
+                                    <input type="file" id="pengumumanGambarFile" accept="image/*" onchange="convertPengumumanGambarToBase64(event)" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 transition-all cursor-pointer bg-slate-50 border border-slate-100 rounded-lg">
+                                    <p class="text-[10px] text-slate-400 mt-1">Sistem akan menyesuaikan dimensi dan kualitas gambar secara cerdas agar tidak error di Google Sheets.</p>
+                                    <textarea id="pengumumanGambarBase64" class="hidden"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                        <button type="button" onclick="closeModalPengumuman()" class="px-4 py-2 text-slate-600 font-medium hover:bg-slate-200 rounded-lg transition-colors">Batal</button>
+                        <button type="submit" id="btnSavePengumuman" class="px-6 py-2 bg-indigo-600 text-white font-medium hover:bg-indigo-700 rounded-lg transition-colors shadow-sm flex items-center gap-2">
+                            Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus Pengumuman -->
+    <div id="modalDeletePengumuman" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-[100] hidden flex items-center justify-center p-4 transition-opacity opacity-0">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform scale-95 transition-transform text-center p-6" id="modalDeletePengumumanContent">
+            <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 class="font-bold text-lg text-slate-800 mb-2">Hapus Pengumuman?</h3>
+            <p class="text-slate-500 text-sm mb-6">Data ini tidak dapat dikembalikan. Yakin ingin menghapus?</p>
+            <input type="hidden" id="deletePengumumanId">
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModalDeletePengumuman()" class="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-colors w-full">Batal</button>
+                <button onclick="executeDeletePengumuman()" id="btnConfirmDeletePengumuman" class="px-5 py-2.5 bg-red-600 text-white font-medium hover:bg-red-700 rounded-xl transition-colors shadow-sm w-full flex items-center justify-center gap-2">Hapus</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+    // =======================================================================
+    // ZettBOT: FUNGSI KOMPRESI CERDAS (RECURSIVE) 
+    // =======================================================================
+    window.toBase64AndCompress = async function(file, maxSize) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > height && width > maxSize) {
+                        height = Math.round(height * maxSize / width);
+                        width = maxSize;
+                    } else if (height > maxSize) {
+                        width = Math.round(width * maxSize / height);
+                        height = maxSize;
+                    }
+                    
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    const compressIterative = (w, h, q) => {
+                        canvas.width = w;
+                        canvas.height = h;
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
+                        
+                        let dataUrl = canvas.toDataURL('image/jpeg', q);
+                        if (dataUrl.length <= 48000) {
+                            return resolve(dataUrl);
+                        }
+                        if (q > 0.4) {
+                            compressIterative(w, h, q - 0.2);
+                        } else {
+                            compressIterative(Math.round(w * 0.8), Math.round(h * 0.8), 0.8);
+                        }
+                    };
+                    compressIterative(width, height, 0.8);
+                };
+                img.onerror = error => reject(error);
+            };
+            reader.onerror = error => reject(error);
+        });
+    };
+
+    // =======================================================================
+    // ZettBOT: FUNGSI TOAST NOTIFIKASI
+    // =======================================================================
+    window.showToast = function(icon, title, text = '') {
+        if(typeof Swal !== 'undefined') {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                icon: icon,
+                title: title,
+                text: text,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+        }
+    };
+
+    // =======================================================================
+    // ZettBOT: Helper Pencarian Universal Cepat (Anti-Delay via oninput)
+    // =======================================================================
+    function filterTable(inputId, tbodyId) {
+        const inputElement = document.getElementById(inputId);
+        if(!inputElement) return;
+        
+        const input = inputElement.value.toLowerCase();
+        const tbody = document.getElementById(tbodyId);
+        if(!tbody) return;
+        
+        const rows = tbody.getElementsByTagName('tr');
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            // Abaikan baris pesan kosong atau info (yang punya colspan > 1)
+            if (row.cells.length === 1 && row.cells[0].colSpan > 1) continue;
+            
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.indexOf(input) > -1 ? '' : 'none';
+        }
+    }
+
+    // =======================================================================
+    // ZettBOT: CACHE VARIABEL (Menyimpan data agar tidak di-render ulang)
+    // =======================================================================
+    let currentPenggunaData = [];
+    let currentTAData = []; 
+    let currentPengumumanData = [];
+    let currentSettingData = null;
+
+    let isPenggunaLoaded = false;
+    let isTALoaded = false;
+    let isPengumumanLoaded = false;
+    let isSettingLoaded = false;
+    
+    // Status apakah user sudah menekan tombol tampil
+    let isPenggunaFiltered = false;
+
+    // =======================================================================
+    // LOGIC: DATA PENGGUNA
+    // =======================================================================
+    function applyFilterPengguna(isManualClick = false) {
+        isPenggunaFiltered = true;
+        const roleElement = document.getElementById('filterRolePengguna');
+        const role = roleElement ? roleElement.value.toLowerCase() : '';
+        
+        let filteredData = currentPenggunaData;
+        if (role) {
+            filteredData = currentPenggunaData.filter(d => d.role.toLowerCase() === role);
+        }
+        
+        renderPenggunaTable(filteredData);
+        fastSearchPengguna(); // Terapkan pencarian teks jika input pencarian tidak kosong
+
+        // Tampilkan notifikasi hanya saat tombol diklik secara manual
+        if (isManualClick) {
+            window.showToast('success', 'Berhasil', 'Data pengguna berhasil ditampilkan.');
+        }
+    }
+
+    function fastSearchPengguna() {
+        // Jangan eksekusi pencarian jika data belum ditampilkan (sebelum klik Tampil)
+        if (!isPenggunaFiltered) return; 
+        filterTable('searchPengguna', 'penggunaTableBody');
+    }
+
+    function fetchDataPengguna(forceRefresh = false) {
+        const tbody = document.getElementById('penggunaTableBody');
+        if (!tbody) return; 
+        
+        // Jika data sudah ter-load di cache, langsung proses sesuai status filter
+        if (isPenggunaLoaded && !forceRefresh) {
+            if (isPenggunaFiltered) {
+                applyFilterPengguna();
+            } else {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center p-12 text-slate-500 font-medium bg-slate-50/50"><div class="flex flex-col items-center justify-center"><i class="fa-solid fa-filter text-4xl mb-3 text-slate-300"></i><span>Silakan pilih <b>Role</b> dan klik tombol <b class="text-slate-700">Tampil</b> untuk melihat data pengguna.</span></div></td></tr>`;
+            }
+            return;
+        }
+
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center p-8"><div class="loader-spin border-slate-300 border-t-indigo-600 mx-auto"></div><p class="text-slate-500 mt-2 text-sm">Memuat data pengguna...</p></td></tr>';
+        
+        if (typeof google === 'undefined' || !google.script) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-slate-500 font-medium">Berjalan di luar Google Apps Script (Mode Preview).</td></tr>';
+            return;
+        }
+
+        google.script.run
+            .withSuccessHandler(res => {
+                if(res && res.status === 'success') {
+                    currentPenggunaData = res.data; 
+                    isPenggunaLoaded = true;
+                    
+                    if (isPenggunaFiltered) {
+                        applyFilterPengguna();
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="7" class="text-center p-12 text-slate-500 font-medium bg-slate-50/50"><div class="flex flex-col items-center justify-center"><i class="fa-solid fa-filter text-4xl mb-3 text-slate-300"></i><span>Silakan pilih <b>Role</b> dan klik tombol <b class="text-slate-700">Tampil</b> untuk melihat data pengguna.</span></div></td></tr>`;
+                    }
+                } else {
+                    const errorMsg = res ? res.message : 'Respon server tidak valid';
+                    window.showToast('error', 'Error', errorMsg);
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-red-500 font-medium">Gagal memuat data:<br/>${errorMsg}</td></tr>`;
+                }
+            })
+            .withFailureHandler(err => {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-red-600 font-medium"><i class="fa-solid fa-triangle-exclamation mb-2 text-2xl"></i><br/>Terjadi Kesalahan Server:<br/>${err.message}</td></tr>`;
+            })
+            .getPenggunaData();
+    }
+
+    function generatePenggunaRowHTML(d, index) {
+        return `
+            <td class="p-4 text-sm font-mono text-slate-500 text-center row-index">${index + 1}</td>
+            <td class="p-4 font-bold text-slate-800">${d.nama}</td>
+            <td class="p-4"><span class="px-2 py-1 text-xs font-mono bg-slate-100 text-slate-600 rounded-md border border-slate-200">${d.username}</span></td>
+            <td class="p-4 text-sm text-slate-500">
+                <div class="flex items-center gap-3">
+                    <span class="tracking-widest" id="pw-mask-${d.id}">••••••••</span>
+                    <span class="hidden font-mono text-slate-700" id="pw-text-${d.id}">${d.password}</span>
+                    <button onclick="togglePasswordVisibility('${d.id}')" class="text-slate-400 hover:text-indigo-600 transition-colors" title="Lihat Sandi">
+                        <i class="fa-regular fa-eye" id="pw-icon-${d.id}"></i>
+                    </button>
+                </div>
+            </td>
+            <td class="p-4 text-center">
+                <span class="px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider border bg-indigo-50 text-indigo-600 border-indigo-200">${d.role}</span>
+            </td>
+            <td class="p-4 text-center">
+                <button id="btn-status-pengguna-${d.id}" onclick="toggleStatusPengguna('${d.id}')" class="px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider border transition-colors ${d.status === 'Aktif' ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}">
+                    ${d.status} <i class="fa-solid fa-retweet ml-1"></i>
+                </button>
+            </td>
+            <td class="p-4 flex gap-2 justify-center">
+                <button onclick="openModalPengguna('edit', '${d.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-all shadow-sm"><i class="fa-solid fa-pen-to-square text-sm"></i></button>
+                <button onclick="confirmDeletePengguna('${d.id}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center transition-all shadow-sm"><i class="fa-solid fa-trash text-sm"></i></button>
+            </td>
+        `;
+    }
+
+    function renderPenggunaTable(data) {
+        const tbody = document.getElementById('penggunaTableBody');
+        if(!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-slate-500 font-medium">Belum ada data yang cocok dengan kriteria filter.</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = data.map((d, i) => `
+            <tr id="row-pengguna-${d.id}" class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                ${generatePenggunaRowHTML(d, i)}
+            </tr>
+        `).join('');
+    }
+
+    function togglePasswordVisibility(id) {
+        const mask = document.getElementById(`pw-mask-${id}`);
+        const text = document.getElementById(`pw-text-${id}`);
+        const icon = document.getElementById(`pw-icon-${id}`);
+
+        if (mask.classList.contains('hidden')) {
+            mask.classList.remove('hidden');
+            text.classList.add('hidden');
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        } else {
+            mask.classList.add('hidden');
+            text.classList.remove('hidden');
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        }
+    }
+
+    function toggleStatusPengguna(id) {
+        if (typeof google === 'undefined' || !google.script) {
+            return window.showToast('error', 'Error', 'Fungsi ini tidak tersedia di mode preview.');
+        }
+
+        const btn = document.getElementById(`btn-status-pengguna-${id}`);
+        let originalText = '';
+        if (btn) {
+            originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+        }
+
+        google.script.run
+            .withSuccessHandler(res => {
+                if(res.status === 'success') { 
+                    const itemIndex = currentPenggunaData.findIndex(p => p.id === id);
+                    if(itemIndex > -1) {
+                        currentPenggunaData[itemIndex].status = res.newStatus;
+                        // Refresh view jika sedang dalam mode filter
+                        if(isPenggunaFiltered) applyFilterPengguna();
+                    }
+                    window.showToast('success', 'Sukses', res.message); 
+                } else {
+                    if (btn) {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                    window.showToast('error', 'Error', res.message);
+                }
+            })
+            .withFailureHandler(err => {
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+                window.showToast('error', 'Error', err.message);
+            })
+            .togglePenggunaStatus(id);
+    }
+
+    function openModalPengguna(mode, id = null) {
+        const modal = document.getElementById('modalPengguna');
+        const title = document.getElementById('modalPenggunaTitle');
+        const form = document.getElementById('formPengguna');
+        
+        form.reset();
+        document.getElementById('userId').value = '';
+
+        if (mode === 'edit') {
+            title.innerText = 'Edit Pengguna';
+            const user = currentPenggunaData.find(u => u.id === id);
+            if (user) {
+                document.getElementById('userId').value = user.id;
+                document.getElementById('userNama').value = user.nama;
+                document.getElementById('userUsername').value = user.username;
+                document.getElementById('userPassword').value = user.password;
+                document.getElementById('userRole').value = user.role.toLowerCase();
+                document.getElementById('userStatus').value = user.status;
+            }
+        } else {
+            title.innerText = 'Tambah Pengguna';
+        }
+
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('modalPenggunaContent').classList.remove('scale-95'); }, 10);
+    }
+
+    function closeModalPengguna() {
+        const modal = document.getElementById('modalPengguna');
+        modal.classList.add('opacity-0');
+        document.getElementById('modalPenggunaContent').classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); }, 300);
+    }
+
+    function savePengguna() {
+        if (typeof google === 'undefined' || !google.script) {
+            return window.showToast('error', 'Error', 'Fungsi ini tidak tersedia di mode preview.');
+        }
+
+        const payload = {
+            id: document.getElementById('userId').value,
+            nama: document.getElementById('userNama').value,
+            username: document.getElementById('userUsername').value,
+            password: document.getElementById('userPassword').value,
+            role: document.getElementById('userRole').value,
+            status: document.getElementById('userStatus').value
+        };
+
+        const btn = document.getElementById('btnSavePengguna');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+        btn.disabled = true;
+
+        google.script.run
+            .withSuccessHandler(res => {
+                btn.innerHTML = 'Simpan'; btn.disabled = false;
+                if(res.status === 'success') { 
+                    closeModalPengguna(); 
+                    window.showToast('success', 'Sukses', res.message); 
+                    
+                    // Update Array Cache
+                    const savedData = res.data;
+                    const existingIndex = currentPenggunaData.findIndex(u => u.id === savedData.id);
+
+                    if(existingIndex > -1) {
+                        currentPenggunaData[existingIndex] = savedData;
+                    } else {
+                        currentPenggunaData.push(savedData);
+                    }
+                    
+                    // Render ulang DOM berdasarkan filter aktif jika sudah ditampilkan
+                    if(isPenggunaFiltered) {
+                        applyFilterPengguna();
+                    }
+                }
+                else { 
+                    window.showToast('error', 'Error', res.message); 
+                }
+            })
+            .savePenggunaData(payload);
+    }
+
+    function confirmDeletePengguna(id) {
+        document.getElementById('deleteUserId').value = id;
+        const modal = document.getElementById('modalDelete');
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('modalDeleteContent').classList.remove('scale-95'); }, 10);
+    }
+
+    function closeModalDelete() {
+        const modal = document.getElementById('modalDelete');
+        modal.classList.add('opacity-0');
+        document.getElementById('modalDeleteContent').classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); }, 300);
+    }
+
+    function executeDeletePengguna() {
+        if (typeof google === 'undefined' || !google.script) {
+            return window.showToast('error', 'Error', 'Fungsi ini tidak tersedia di mode preview.');
+        }
+
+        const id = document.getElementById('deleteUserId').value;
+        const btn = document.getElementById('btnConfirmDelete');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghapus...'; btn.disabled = true;
+
+        google.script.run
+            .withSuccessHandler(res => {
+                btn.innerHTML = 'Hapus'; btn.disabled = false;
+                if(res.status === 'success') { 
+                    closeModalDelete(); 
+                    window.showToast('success', 'Terhapus', res.message); 
+                    
+                    // Hapus dari Array Cache
+                    const existingIndex = currentPenggunaData.findIndex(u => u.id === id);
+                    if(existingIndex > -1) {
+                        currentPenggunaData.splice(existingIndex, 1);
+                        // Refresh view jika sedang dalam mode filter
+                        if(isPenggunaFiltered) applyFilterPengguna();
+                    }
+                }
+            })
+            .deletePenggunaData(id);
+    }
+
+    // =======================================================================
+    // LOGIC: DATA TAHUN AJARAN
+    // =======================================================================
+    function fetchDataTahunAjaran(forceRefresh = false) {
+        const tbody = document.getElementById('taTableBody');
+        if (!tbody) return; 
+        
+        // Cek Cache
+        if (isTALoaded && !forceRefresh) {
+            renderTahunAjaranTable(currentTAData);
+            if (typeof applyGlobalAppConfig === 'function') applyGlobalAppConfig();
+            return;
+        }
+
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8"><div class="loader-spin border-slate-300 border-t-indigo-600 mx-auto"></div><p class="text-slate-500 mt-2 text-sm">Memuat data Tahun Ajaran...</p></td></tr>';
+        
+        if (typeof google === 'undefined' || !google.script) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-slate-500 font-medium">Berjalan di luar Google Apps Script (Mode Preview).</td></tr>';
+            return;
+        }
+
+        google.script.run
+            .withSuccessHandler(res => {
+                if(res && res.status === 'success') {
+                    currentTAData = res.data; 
+                    isTALoaded = true;
+                    renderTahunAjaranTable(res.data);
+                    if (typeof applyGlobalAppConfig === 'function') applyGlobalAppConfig();
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-red-500 font-medium">Gagal memuat data: ${res.message}</td></tr>`;
+                }
+            })
+            .getTahunAjaranData();
+    }
+
+    function generateTARowHTML(d, index) {
+        return `
+            <td class="p-4 text-sm font-mono text-slate-500 text-center row-index">${index + 1}</td>
+            <td class="p-4 font-bold text-slate-800">${d.tahun}</td>
+            <td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">${d.semester}</span></td>
+            <td class="p-4 text-center">
+                <button id="btn-status-ta-${d.id}" onclick="toggleStatusTA('${d.id}')" class="px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider border transition-colors ${d.status === 'Aktif' ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}">
+                    ${d.status} <i class="fa-solid fa-retweet ml-1"></i>
+                </button>
+            </td>
+            <td class="p-4 flex gap-2 justify-center">
+                <button onclick="openModalTA('edit', '${d.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-all shadow-sm"><i class="fa-solid fa-pen-to-square text-sm"></i></button>
+                <button onclick="confirmDeleteTA('${d.id}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center transition-all shadow-sm"><i class="fa-solid fa-trash text-sm"></i></button>
+            </td>
+        `;
+    }
+
+    function renderTahunAjaranTable(data) {
+        const tbody = document.getElementById('taTableBody');
+        if(!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-slate-500 font-medium">Belum ada data Tahun Ajaran.</td></tr>'; return;
+        }
+        
+        tbody.innerHTML = data.map((d, i) => `
+            <tr id="row-ta-${d.id}" class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                ${generateTARowHTML(d, i)}
+            </tr>
+        `).join('');
+    }
+
+    function toggleStatusTA(id) {
+        if (typeof google === 'undefined' || !google.script) {
+            return window.showToast('error', 'Error', 'Fungsi ini tidak tersedia di mode preview.');
+        }
+
+        const btn = document.getElementById(`btn-status-ta-${id}`);
+        let originalText = '';
+        if (btn) {
+            originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+        }
+
+        google.script.run
+            .withSuccessHandler(res => {
+                if(res.status === 'success') {
+                    // Jika status baru adalah 'Aktif', set baris lain jadi 'Non-Aktif' di Cache dan UI
+                    if (res.newStatus === 'Aktif') {
+                        currentTAData.forEach((ta, idx) => {
+                            if (ta.id !== id && ta.status === 'Aktif') {
+                                ta.status = 'Non-Aktif';
+                                const tr = document.getElementById(`row-ta-${ta.id}`);
+                                if (tr) tr.innerHTML = generateTARowHTML(ta, idx);
+                            }
+                        });
+                    }
+                    
+                    const itemIndex = currentTAData.findIndex(p => p.id === id);
+                    if(itemIndex > -1) {
+                        currentTAData[itemIndex].status = res.newStatus;
+                        const tr = document.getElementById(`row-ta-${id}`);
+                        if(tr) tr.innerHTML = generateTARowHTML(currentTAData[itemIndex], itemIndex);
+                    }
+                    window.showToast('success', 'Sukses', res.message);
+                    if (typeof applyGlobalAppConfig === 'function') applyGlobalAppConfig();
+                } else {
+                    if (btn) {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                    window.showToast('error', 'Error', res.message);
+                }
+            })
+            .withFailureHandler(err => {
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+                window.showToast('error', 'Error', err.message);
+            })
+            .toggleTahunAjaranStatus(id);
+    }
+
+    function openModalTA(mode, id = null) {
+        const modal = document.getElementById('modalTA');
+        const title = document.getElementById('modalTATitle');
+        const form = document.getElementById('formTA');
+        form.reset(); document.getElementById('taId').value = '';
+
+        if (mode === 'edit') {
+            title.innerText = 'Edit Tahun Ajaran';
+            const ta = currentTAData.find(t => t.id === id);
+            if (ta) {
+                document.getElementById('taId').value = ta.id; document.getElementById('taTahun').value = ta.tahun; document.getElementById('taSemester').value = ta.semester; document.getElementById('taStatus').value = ta.status;
+            }
+        } else { title.innerText = 'Tambah Tahun Ajaran'; }
+
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('modalTAContent').classList.remove('scale-95'); }, 10);
+    }
+
+    function closeModalTA() {
+        const modal = document.getElementById('modalTA');
+        modal.classList.add('opacity-0'); document.getElementById('modalTAContent').classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); }, 300);
+    }
+
+    function saveTA() {
+        if (typeof google === 'undefined' || !google.script) {
+            return window.showToast('error', 'Error', 'Fungsi ini tidak tersedia di mode preview.');
+        }
+
+        const payload = { id: document.getElementById('taId').value, tahun: document.getElementById('taTahun').value, semester: document.getElementById('taSemester').value, status: document.getElementById('taStatus').value };
+        const btn = document.getElementById('btnSaveTA');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true;
+
+        google.script.run
+            .withSuccessHandler(res => {
+                btn.innerHTML = 'Simpan'; btn.disabled = false;
+                if(res.status === 'success') { 
+                    closeModalTA(); 
+                    window.showToast('success', 'Sukses', res.message); 
+                    
+                    // Update DOM Baris Terkait
+                    const savedData = res.data;
+                    
+                    // Jika disimpan sebagai aktif, non-aktifkan baris lainnya di Cache dan UI
+                    if (savedData.status === 'Aktif') {
+                        currentTAData.forEach((ta, idx) => {
+                            if (ta.id !== savedData.id && ta.status === 'Aktif') {
+                                ta.status = 'Non-Aktif';
+                                const tr = document.getElementById(`row-ta-${ta.id}`);
+                                if (tr) tr.innerHTML = generateTARowHTML(ta, idx);
+                            }
+                        });
+                    }
+
+                    const existingIndex = currentTAData.findIndex(u => u.id === savedData.id);
+                    const tbody = document.getElementById('taTableBody');
+
+                    if(existingIndex > -1) {
+                        currentTAData[existingIndex] = savedData;
+                        const tr = document.getElementById(`row-ta-${savedData.id}`);
+                        if(tr) tr.innerHTML = generateTARowHTML(savedData, existingIndex);
+                    } else {
+                        currentTAData.push(savedData);
+                        const newIndex = currentTAData.length - 1;
+                        if(tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
+                        const tr = document.createElement('tr');
+                        tr.id = `row-ta-${savedData.id}`;
+                        tr.className = "border-b border-slate-50 hover:bg-slate-50 transition-colors";
+                        tr.innerHTML = generateTARowHTML(savedData, newIndex);
+                        tbody.appendChild(tr);
+                    }
+                }
+            }).saveTahunAjaranData(payload);
+    }
+
+    function confirmDeleteTA(id) {
+        document.getElementById('deleteTaId').value = id;
+        const modal = document.getElementById('modalDeleteTA');
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('modalDeleteTAContent').classList.remove('scale-95'); }, 10);
+    }
+
+    function closeModalDeleteTA() {
+        const modal = document.getElementById('modalDeleteTA');
+        modal.classList.add('opacity-0'); document.getElementById('modalDeleteTAContent').classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); }, 300);
+    }
+
+    function executeDeleteTA() {
+        if (typeof google === 'undefined' || !google.script) {
+            return window.showToast('error', 'Error', 'Fungsi ini tidak tersedia di mode preview.');
+        }
+
+        const id = document.getElementById('deleteTaId').value;
+        const btn = document.getElementById('btnConfirmDeleteTA');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghapus...'; btn.disabled = true;
+
+        google.script.run
+            .withSuccessHandler(res => {
+                btn.innerHTML = 'Hapus'; btn.disabled = false;
+                if(res.status === 'success') { 
+                    closeModalDeleteTA(); 
+                    window.showToast('success', 'Terhapus', res.message); 
+                    
+                    // Hapus DOM Baris Terkait dan Cache
+                    const existingIndex = currentTAData.findIndex(u => u.id === id);
+                    if(existingIndex > -1) {
+                        currentTAData.splice(existingIndex, 1);
+                        const tr = document.getElementById(`row-ta-${id}`);
+                        if(tr) tr.remove();
+                        
+                        const tbody = document.getElementById('taTableBody');
+                        const rows = tbody.querySelectorAll('tr[id^="row-ta-"]');
+                        rows.forEach((row, i) => {
+                            const indexTd = row.querySelector('.row-index');
+                            if(indexTd) indexTd.innerText = i + 1;
+                        });
+                        
+                        if(currentTAData.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-slate-500 font-medium">Belum ada data Tahun Ajaran.</td></tr>';
+                        }
+                    }
+                }
+            }).deleteTahunAjaranData(id);
+    }
+
+    // =======================================================================
+    // LOGIC: SETTING APLIKASI
+    // =======================================================================
+    async function convertLogoToBase64(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const icon = document.getElementById('settingLogoIcon');
+        if(icon) icon.className = "fa-solid fa-spinner fa-spin text-4xl text-indigo-400 absolute";
+
+        try {
+            const base64String = await window.toBase64AndCompress(file, 800);
+            
+            document.getElementById('settingLogoBase64').value = base64String;
+            const previewImg = document.getElementById('settingLogoPreview');
+            previewImg.src = base64String;
+            previewImg.classList.remove('hidden');
+            if(icon) icon.classList.add('hidden');
+        } catch (e) {
+            console.error("Gagal memproses gambar logo:", e);
+            if(icon) icon.className = "fa-solid fa-image text-4xl text-slate-300 absolute";
+            window.showToast('error', 'Error', 'Gagal memproses gambar.');
+        }
+    }
+
+    function fetchSettingAplikasi(forceRefresh = false) {
+        const btn = document.getElementById('btnSaveSetting');
+        
+        // Cek Cache
+        if (isSettingLoaded && !forceRefresh && currentSettingData) {
+            document.getElementById('settingAppName').value = currentSettingData.nama || '';
+            if(currentSettingData.logo && currentSettingData.logo.trim() !== '') {
+                document.getElementById('settingLogoBase64').value = currentSettingData.logo;
+                const previewImg = document.getElementById('settingLogoPreview');
+                previewImg.src = currentSettingData.logo;
+                previewImg.classList.remove('hidden');
+                document.getElementById('settingLogoIcon').classList.add('hidden');
+            } else {
+                document.getElementById('settingLogoBase64').value = '';
+                document.getElementById('settingLogoPreview').classList.add('hidden');
+                document.getElementById('settingLogoIcon').classList.remove('hidden');
+            }
+            return;
+        }
+
+        if (typeof google === 'undefined' || !google.script) {
+            if (btn) { btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan'; btn.disabled = false; }
+            return;
+        }
+
+        if (btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memuat...'; btn.disabled = true; }
+
+        if(typeof google.script.run.getSettingAplikasi === 'function') {
+            google.script.run
+                .withSuccessHandler(res => {
+                    if (btn) { btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan'; btn.disabled = false; }
+                    
+                    if(res && res.status === 'success' && res.data) {
+                        currentSettingData = res.data;
+                        isSettingLoaded = true;
+
+                        document.getElementById('settingAppName').value = res.data.nama || '';
+                        if(res.data.logo && res.data.logo.trim() !== '') {
+                            document.getElementById('settingLogoBase64').value = res.data.logo;
+                            const previewImg = document.getElementById('settingLogoPreview');
+                            previewImg.src = res.data.logo;
+                            previewImg.classList.remove('hidden');
+                            document.getElementById('settingLogoIcon').classList.add('hidden');
+                        } else {
+                            document.getElementById('settingLogoBase64').value = '';
+                            document.getElementById('settingLogoPreview').classList.add('hidden');
+                            document.getElementById('settingLogoIcon').classList.remove('hidden');
+                        }
+                    }
+                })
+                .withFailureHandler(err => {
+                    if (btn) { btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan'; btn.disabled = false; }
+                    console.error("Gagal memuat setting aplikasi:", err);
+                })
+                .getSettingAplikasi();
+        }
+    }
+
+    function saveSettingApp() {
+        if (typeof google === 'undefined' || !google.script) {
+            return window.showToast('error', 'Error', 'Fungsi ini tidak tersedia di mode preview.');
+        }
+
+        const payload = {
+            nama: document.getElementById('settingAppName').value,
+            logo: document.getElementById('settingLogoBase64').value
+        };
+        
+        const btn = document.getElementById('btnSaveSetting');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true;
+
+        if(typeof google.script.run.saveSettingAplikasi === 'function') {
+            google.script.run
+                .withSuccessHandler(res => {
+                    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan'; btn.disabled = false;
+                    if(res.status === 'success') {
+                        // Perbarui Cache
+                        currentSettingData = payload;
+                        isSettingLoaded = true;
+                        
+                        window.showToast('success', 'Sukses', 'Pengaturan berhasil disimpan!');
+                        if(typeof updateGlobalUIElements === 'function') {
+                            updateGlobalUIElements(payload.nama, payload.logo);
+                        }
+                    } else {
+                        window.showToast('error', 'Error', res.message);
+                    }
+                })
+                .saveSettingAplikasi(payload);
+        }
+    }
+
+    // =======================================================================
+    // LOGIC: PENGUMUMAN
+    // =======================================================================
+    function fetchDataPengumuman(forceRefresh = false) {
+        const tbody = document.getElementById('pengumumanTableBody');
+        if (!tbody) return; 
+        
+        // Cek Cache
+        if (isPengumumanLoaded && !forceRefresh) {
+            renderPengumumanTable(currentPengumumanData);
+            return;
+        }
+
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8"><div class="loader-spin border-slate-300 border-t-indigo-600 mx-auto"></div><p class="text-slate-500 mt-2 text-sm">Memuat data pengumuman...</p></td></tr>';
+        
+        if (typeof google === 'undefined' || !google.script) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-500 font-medium">Berjalan di luar Google Apps Script (Mode Preview).</td></tr>';
+            return;
+        }
+
+        google.script.run
+            .withSuccessHandler(res => {
+                if(res && res.status === 'success') {
+                    currentPengumumanData = res.data; 
+                    isPengumumanLoaded = true;
+                    renderPengumumanTable(res.data);
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-red-500 font-medium">Gagal memuat data: ${res.message}</td></tr>`;
+                }
+            })
+            .getPengumumanData();
+    }
+
+    function generatePengumumanRowHTML(d, index) {
+        const imgHtml = d.gambar && d.gambar.trim() !== '' 
+            ? `<img src="${d.gambar}" class="w-16 h-12 object-cover rounded-md border border-slate-200 shadow-sm mx-auto">` 
+            : `<div class="w-16 h-12 bg-slate-100 rounded-md border border-slate-200 flex items-center justify-center text-slate-400 mx-auto text-xs"><i class="fa-solid fa-image"></i></div>`;
+        
+        return `
+            <td class="p-4 text-sm font-mono text-slate-500 text-center row-index">${index + 1}</td>
+            <td class="p-4 text-center">${imgHtml}</td>
+            <td class="p-4">
+                <div class="font-bold text-slate-800 mb-1">${d.judul}</div>
+                <div class="text-xs text-slate-500 line-clamp-2">${d.isi}</div>
+            </td>
+            <td class="p-4 text-center text-xs font-medium text-slate-500 whitespace-nowrap">${typeof formatTanggalBiasa === 'function' ? formatTanggalBiasa(d.tanggal) : d.tanggal}</td>
+            <td class="p-4 text-center">
+                <button id="btn-status-pengumuman-${d.id}" onclick="toggleStatusPengumuman('${d.id}')" class="px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider border transition-colors ${d.status === 'Aktif' ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}">
+                    ${d.status} <i class="fa-solid fa-retweet ml-1"></i>
+                </button>
+            </td>
+            <td class="p-4 flex gap-2 justify-center">
+                <button onclick="openModalPengumuman('edit', '${d.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-all shadow-sm"><i class="fa-solid fa-pen-to-square text-sm"></i></button>
+                <button onclick="confirmDeletePengumuman('${d.id}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center transition-all shadow-sm"><i class="fa-solid fa-trash text-sm"></i></button>
+            </td>
+        `;
+    }
+
+    function renderPengumumanTable(data) {
+        const tbody = document.getElementById('pengumumanTableBody');
+        if(!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-500 font-medium">Belum ada data pengumuman.</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = data.map((d, i) => `
+            <tr id="row-pengumuman-${d.id}" class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                ${generatePengumumanRowHTML(d, i)}
+            </tr>
+        `).join('');
+    }
+
+    async function convertPengumumanGambarToBase64(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const icon = document.getElementById('pengumumanGambarIcon');
+        if(icon) icon.className = "fa-solid fa-spinner fa-spin text-2xl text-indigo-400 absolute";
+
+        try {
+            const base64String = await window.toBase64AndCompress(file, 800);
+            
+            document.getElementById('pengumumanGambarBase64').value = base64String;
+            const previewImg = document.getElementById('pengumumanGambarPreview');
+            previewImg.src = base64String;
+            previewImg.classList.remove('hidden');
+            if(icon) icon.classList.add('hidden');
+        } catch(e) {
+            console.error("Gagal memproses gambar pengumuman:", e);
+            if(icon) icon.className = "fa-solid fa-image text-2xl text-slate-300 absolute";
+            window.showToast('error', 'Error', 'Gagal memproses gambar.');
+        }
+    }
+
+    function openModalPengumuman(mode, id = null) {
+        const modal = document.getElementById('modalPengumuman');
+        const title = document.getElementById('modalPengumumanTitle');
+        const form = document.getElementById('formPengumuman');
+        
+        form.reset();
+        document.getElementById('pengumumanId').value = '';
+        document.getElementById('pengumumanGambarBase64').value = '';
+        document.getElementById('pengumumanGambarPreview').classList.add('hidden');
+        document.getElementById('pengumumanGambarPreview').src = '';
+        document.getElementById('pengumumanGambarIcon').classList.remove('hidden');
+
+        if (mode === 'edit') {
+            title.innerText = 'Edit Pengumuman';
+            const item = currentPengumumanData.find(p => p.id === id);
+            if (item) {
+                document.getElementById('pengumumanId').value = item.id;
+                document.getElementById('pengumumanJudul').value = item.judul;
+                document.getElementById('pengumumanIsi').value = item.isi;
+                if(item.gambar && item.gambar.trim() !== '') {
+                    document.getElementById('pengumumanGambarBase64').value = item.gambar;
+                    document.getElementById('pengumumanGambarPreview').src = item.gambar;
+                    document.getElementById('pengumumanGambarPreview').classList.remove('hidden');
+                    document.getElementById('pengumumanGambarIcon').classList.add('hidden');
+                }
+            }
+        } else {
+            title.innerText = 'Tambah Pengumuman';
+        }
+
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('modalPengumumanContent').classList.remove('scale-95'); }, 10);
+    }
+
+    function closeModalPengumuman() {
+        const modal = document.getElementById('modalPengumuman');
+        modal.classList.add('opacity-0');
+        document.getElementById('modalPengumumanContent').classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); }, 300);
+    }
+
+    function savePengumuman() {
+        if (typeof google === 'undefined' || !google.script) {
+            return window.showToast('error', 'Error', 'Fungsi ini tidak tersedia di mode preview.');
+        }
+
+        const payload = {
+            id: document.getElementById('pengumumanId').value,
+            judul: document.getElementById('pengumumanJudul').value,
+            isi: document.getElementById('pengumumanIsi').value,
+            gambar: document.getElementById('pengumumanGambarBase64').value
+        };
+
+        const btn = document.getElementById('btnSavePengumuman');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+        btn.disabled = true;
+
+        google.script.run
+            .withSuccessHandler(res => {
+                btn.innerHTML = 'Simpan'; btn.disabled = false;
+                if(res.status === 'success') { 
+                    closeModalPengumuman(); 
+                    window.showToast('success', 'Sukses', res.message); 
+                    
+                    // Update DOM Baris Terkait
+                    const savedData = res.data;
+                    const existingIndex = currentPengumumanData.findIndex(u => u.id === savedData.id);
+                    const tbody = document.getElementById('pengumumanTableBody');
+
+                    if(existingIndex > -1) {
+                        currentPengumumanData[existingIndex] = savedData;
+                        const tr = document.getElementById(`row-pengumuman-${savedData.id}`);
+                        if(tr) tr.innerHTML = generatePengumumanRowHTML(savedData, existingIndex);
+                    } else {
+                        currentPengumumanData.push(savedData);
+                        const newIndex = currentPengumumanData.length - 1;
+                        if(tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
+                        const tr = document.createElement('tr');
+                        tr.id = `row-pengumuman-${savedData.id}`;
+                        tr.className = "border-b border-slate-50 hover:bg-slate-50 transition-colors";
+                        tr.innerHTML = generatePengumumanRowHTML(savedData, newIndex);
+                        tbody.appendChild(tr);
+                    }
+                }
+                else { 
+                    window.showToast('error', 'Error', res.message); 
+                }
+            })
+            .savePengumumanData(payload);
+    }
+
+    function confirmDeletePengumuman(id) {
+        document.getElementById('deletePengumumanId').value = id;
+        const modal = document.getElementById('modalDeletePengumuman');
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('modalDeletePengumumanContent').classList.remove('scale-95'); }, 10);
+    }
+
+    function closeModalDeletePengumuman() {
+        const modal = document.getElementById('modalDeletePengumuman');
+        modal.classList.add('opacity-0');
+        document.getElementById('modalDeletePengumumanContent').classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); }, 300);
+    }
+
+    function executeDeletePengumuman() {
+        if (typeof google === 'undefined' || !google.script) {
+            return window.showToast('error', 'Error', 'Fungsi ini tidak tersedia di mode preview.');
+        }
+
+        const id = document.getElementById('deletePengumumanId').value;
+        const btn = document.getElementById('btnConfirmDeletePengumuman');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghapus...'; btn.disabled = true;
+
+        google.script.run
+            .withSuccessHandler(res => {
+                btn.innerHTML = 'Hapus'; btn.disabled = false;
+                if(res.status === 'success') { 
+                    closeModalDeletePengumuman(); 
+                    window.showToast('success', 'Terhapus', res.message); 
+                    
+                    // Hapus DOM Baris Terkait dan Cache
+                    const existingIndex = currentPengumumanData.findIndex(u => u.id === id);
+                    if(existingIndex > -1) {
+                        currentPengumumanData.splice(existingIndex, 1);
+                        const tr = document.getElementById(`row-pengumuman-${id}`);
+                        if(tr) tr.remove();
+                        
+                        const tbody = document.getElementById('pengumumanTableBody');
+                        const rows = tbody.querySelectorAll('tr[id^="row-pengumuman-"]');
+                        rows.forEach((row, i) => {
+                            const indexTd = row.querySelector('.row-index');
+                            if(indexTd) indexTd.innerText = i + 1;
+                        });
+                        
+                        if(currentPengumumanData.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-500 font-medium">Belum ada data pengumuman.</td></tr>';
+                        }
+                    }
+                }
+            })
+            .deletePengumumanData(id);
+    }
+
+    function toggleStatusPengumuman(id) {
+        if (typeof google === 'undefined' || !google.script) {
+            return window.showToast('error', 'Error', 'Fungsi ini tidak tersedia di mode preview.');
+        }
+
+        const btn = document.getElementById(`btn-status-pengumuman-${id}`);
+        let originalText = '';
+        if (btn) {
+            originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+        }
+
+        google.script.run
+            .withSuccessHandler(res => {
+                if(res.status === 'success') { 
+                    const itemIndex = currentPengumumanData.findIndex(p => p.id === id);
+                    if(itemIndex > -1) {
+                        currentPengumumanData[itemIndex].status = res.newStatus;
+                        const tr = document.getElementById(`row-pengumuman-${id}`);
+                        if(tr) tr.innerHTML = generatePengumumanRowHTML(currentPengumumanData[itemIndex], itemIndex);
+                    }
+                    window.showToast('success', 'Sukses', res.message); 
+                } else {
+                    if (btn) {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                    window.showToast('error', 'Error', res.message);
+                }
+            })
+            .withFailureHandler(err => {
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+                window.showToast('error', 'Error', err.message);
+            })
+            .togglePengumumanStatus(id);
+    }
+
+    // =======================================================================
+    // ZettBOT: PRELOAD DATA BACKGROUND (AGAR LANGSUNG TERMUAT TANPA RENDER ULANG)
+    // =======================================================================
+    function preloadAllProfilData() {
+        if (typeof google === 'undefined' || !google.script || !google.script.run) {
+            console.warn("Preload dilewati: Bukan di environment Google Apps Script");
+            return;
+        }
+
+        if (!isPenggunaLoaded) {
+            google.script.run.withSuccessHandler(res => {
+                if(res && res.status === 'success') { currentPenggunaData = res.data; isPenggunaLoaded = true; }
+            }).getPenggunaData();
+        }
+        if (!isTALoaded) {
+            google.script.run.withSuccessHandler(res => {
+                if(res && res.status === 'success') {
+                    currentTAData = res.data; isTALoaded = true;
+                    if (typeof applyGlobalAppConfig === 'function') applyGlobalAppConfig();
+                }
+            }).getTahunAjaranData();
+        }
+        if (!isPengumumanLoaded) {
+            google.script.run.withSuccessHandler(res => {
+                if(res && res.status === 'success') { currentPengumumanData = res.data; isPengumumanLoaded = true; }
+            }).getPengumumanData();
+        }
+        if (!isSettingLoaded && typeof google.script.run.getSettingAplikasi === 'function') {
+            google.script.run.withSuccessHandler(res => {
+                if(res && res.status === 'success' && res.data) {
+                    currentSettingData = res.data; isSettingLoaded = true;
+                }
+            }).getSettingAplikasi();
+        }
+    }
+
+    setTimeout(preloadAllProfilData, 500);
+</script>
