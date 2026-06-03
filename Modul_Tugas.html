@@ -1,0 +1,1646 @@
+<template id="tpl-modul-tugas">
+    <div class="animate-fade">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div>
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-800">Manajemen Tugas</h2>
+                <p class="text-slate-500 text-sm mt-1">Kelola pembuatan tugas mandiri untuk siswa.</p>
+            </div>
+            <button onclick="showModalFormTugas()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-plus"></i> Tambah Tugas
+            </button>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse min-w-[1000px]">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-bold tracking-wider">
+                        <tr>
+                            <th rowspan="2" class="px-4 py-3 text-center border-r border-slate-200 w-12">No</th>
+                            <th id="colHeaderGuru" rowspan="2" class="px-4 py-3 border-r border-slate-200">Nama Guru</th>
+                            <th rowspan="2" class="px-4 py-3 border-r border-slate-200">Mapel</th>
+                            <th rowspan="2" class="px-4 py-3 border-r border-slate-200 min-w-[200px]">Judul Tugas</th>
+                            <th rowspan="2" class="px-4 py-3 border-r border-slate-200">Kelas</th>
+                            <th colspan="2" class="px-4 py-3 text-center border-r border-slate-200 border-b">Batas Waktu</th>
+                            <th colspan="4" class="px-4 py-3 text-center border-r border-slate-200 border-b">Jenis Tugas</th>
+                            <th rowspan="2" class="px-4 py-3 text-center border-r border-slate-200 w-24">Status</th>
+                            <th rowspan="2" class="px-4 py-3 text-center w-24">Aksi</th>
+                        </tr>
+                        <tr>
+                            <th class="px-4 py-2 text-center border-r border-slate-200 text-[10px] w-32">Mulai</th>
+                            <th class="px-4 py-2 text-center border-r border-slate-200 text-[10px] w-32">Selesai</th>
+                            <th class="px-2 py-2 text-center border-r border-slate-200 text-[10px]">Teks</th>
+                            <th class="px-2 py-2 text-center border-r border-slate-200 text-[10px]">Foto</th>
+                            <th class="px-2 py-2 text-center border-r border-slate-200 text-[10px]">Video</th>
+                            <th class="px-2 py-2 text-center border-r border-slate-200 text-[10px]">File</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelTugasBody" class="text-sm text-slate-700 divide-y divide-slate-100">
+                        <tr>
+                            <td colspan="13" id="loadingRowTugas" class="px-4 py-8 text-center text-slate-500">
+                                <div class="loader-spin border-slate-300 border-t-indigo-600 mb-2"></div><br>Memuat data tugas...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- PAGINASI MANAJEMEN TUGAS -->
+            <div id="paginationTugas" class="flex flex-col sm:flex-row justify-between items-center px-4 py-3 bg-white border-t border-slate-200 sm:px-6 rounded-b-2xl">
+                <!-- Data Paginasi Akan Dirender Disini -->
+            </div>
+        </div>
+    </div>
+
+    <div id="modalFormTugas" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-fade">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-lg text-slate-800" id="modalFormTitle"><i class="fa-solid fa-list-check text-indigo-600 mr-2"></i> Form Tambah Tugas</h3>
+                <button onclick="closeModalFormTugas()" class="text-slate-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                <form id="formTambahTugas" onsubmit="submitFormTugas(event)">
+                    <input type="hidden" id="inpTugasIdEdit" value="">
+
+                    <div id="containerGuruMapelAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Nama Guru <span class="text-red-500">*</span></label>
+                            <select id="inpTugasGuru" onchange="autoFillMapelTugas()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white transition-colors" required>
+                                <option value="">-- Pilih Guru --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Mata Pelajaran</label>
+                            <input type="text" id="inpTugasMapel" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed" readonly placeholder="Otomatis terisi...">
+                        </div>
+                    </div>
+
+                    <div id="containerGuruMapelGuru" class="hidden mb-5 p-4 bg-indigo-50 rounded-xl border border-indigo-100 flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100">
+                            <i class="fa-solid fa-chalkboard-user text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-wider mb-0.5">Pembuat Tugas</p>
+                            <p class="text-base font-bold text-indigo-800 leading-tight" id="lblGuruName">-</p>
+                            <p class="text-xs font-bold text-indigo-600 bg-indigo-100/50 px-2 py-0.5 rounded-md inline-block mt-1"><i class="fa-solid fa-book mr-1"></i> <span id="lblGuruMapel">-</span></p>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Kelas Tujuan <span class="text-red-500">*</span></label>
+                        <select id="inpTugasKelas" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white transition-colors" required>
+                            <option value="">-- Pilih Kelas --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Judul Tugas <span class="text-red-500">*</span></label>
+                        <input type="text" id="inpTugasJudul" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white transition-colors" required placeholder="Contoh: Merangkum Bab 1">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5 border border-slate-100 rounded-xl p-4 bg-slate-50">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Waktu Mulai <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" id="inpTugasMulai" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Waktu Selesai <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" id="inpTugasSelesai" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Instruksi Tugas <span class="text-red-500">*</span></label>
+                        <textarea id="inpTugasInstruksi" rows="3" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white transition-colors resize-none" required placeholder="Tulis instruksi lengkap di sini..."></textarea>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="block text-sm font-bold text-slate-700 mb-2" id="lblTugasFoto">Foto Instruksi <span class="text-slate-400 font-normal text-xs">(Opsional)</span></label>
+                        <input type="file" id="inpTugasFoto" accept="image/*" class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-all bg-slate-50 cursor-pointer">
+                    </div>
+
+                    <div class="mb-5 border border-slate-100 rounded-xl p-4">
+                        <label class="block text-sm font-bold text-slate-700 mb-3">Jenis Bukti Tugas (Bisa pilih lebih dari satu) <span class="text-red-500">*</span></label>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all">
+                                <input type="checkbox" id="chkJenisTeks" value="Teks" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" style="appearance: auto;">
+                                <span class="text-sm font-medium text-slate-700"><i class="fa-solid fa-align-left text-slate-400 w-4"></i> Teks</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all">
+                                <input type="checkbox" id="chkJenisFoto" value="Foto" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" style="appearance: auto;">
+                                <span class="text-sm font-medium text-slate-700"><i class="fa-solid fa-image text-slate-400 w-4"></i> Foto</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all">
+                                <input type="checkbox" id="chkJenisVideo" value="Video" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" style="appearance: auto;">
+                                <span class="text-sm font-medium text-slate-700"><i class="fa-solid fa-video text-slate-400 w-4"></i> Video</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all">
+                                <input type="checkbox" id="chkJenisFile" value="File" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" style="appearance: auto;">
+                                <span class="text-sm font-medium text-slate-700"><i class="fa-solid fa-file-pdf text-slate-400 w-4"></i> File/Dokumen</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                        <button type="button" onclick="closeModalFormTugas()" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all">Batal</button>
+                        <button type="submit" id="btnSimpanTugas" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-indigo-200 transition-all flex items-center gap-2">
+                            <span>Simpan Tugas</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="tpl-tugas-nilai">
+    <div class="animate-fade">
+        <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-6">Nilai Tugas Siswa</h2>
+        <div id="containerNilaiKartu" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="col-span-full p-8 text-center text-slate-500 bg-white rounded-2xl border border-slate-100">
+                <div class="loader-spin border-slate-300 border-t-indigo-600 mb-2"></div><br>Memuat kartu tugas...
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="tpl-tugas-nilai-detail">
+    <div class="animate-fade">
+        <button type="button" onclick="loadModule('tugas-nilai')" class="mb-5 text-slate-500 hover:text-indigo-600 font-bold text-sm flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100 w-fit transition-all">
+            <i class="fa-solid fa-arrow-left"></i> Kembali ke Daftar Tugas
+        </button>
+
+        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-4" id="detTitleTugas">Detail Pengumpulan Tugas</h2>
+        
+        <div class="flex flex-col sm:flex-row gap-3 mb-5 justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <div class="relative w-full sm:w-1/2 md:w-80">
+                <i class="fa-solid fa-search absolute left-4 top-3 text-slate-400"></i>
+                <input type="text" id="searchNamaSiswa" onkeyup="filterDetailNilaiTugas()" placeholder="Cari nama siswa..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm text-sm font-medium transition-all">
+            </div>
+            <div class="w-full sm:w-auto flex flex-wrap items-center gap-3">
+                <span class="text-xs font-bold text-slate-500 hidden md:block uppercase tracking-wider">Filter Status:</span>
+                <select id="filterStatusKumpul" onchange="filterDetailNilaiTugas()" class="w-full sm:w-56 px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm text-sm font-medium cursor-pointer transition-all">
+                    <option value="Semua">Tampilkan Semua</option>
+                    <option value="Sudah Kumpul">Lengkap (Sudah Kumpul)</option>
+                    <option value="Kurang Lengkap">Kurang Lengkap</option>
+                    <option value="Belum Mengumpulkan">Belum Mengumpulkan</option>
+                </select>
+                <!-- Tombol Koreksi Massal -->
+                <button onclick="bukaModalKoreksiMassal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none">
+                    <i class="fa-solid fa-check-double"></i> <span>Koreksi Massal (<span id="lblCountBtnMassal">0</span>)</span>
+                </button>
+                <!-- Tombol Cetak -->
+                <button onclick="cetakNilaiTugas()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none">
+                    <i class="fa-solid fa-print"></i> <span>Cetak</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+            <div class="overflow-x-auto custom-scrollbar">
+                <!-- Tabel Koreksi Tugas: 11 Kolom Total -->
+                <table class="w-full text-left border-collapse min-w-[1100px]">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-bold tracking-wider">
+                        <tr>
+                            <!-- HEADER CHECKBOX DIPERTEGAS DENGAN STYLE INLINE AGAR SELALU MUNCUL -->
+                            <th rowspan="2" class="px-3 py-2 text-center border-r border-slate-200 w-16 min-w-[60px]">
+                                <div class="flex flex-col items-center justify-center gap-1">
+                                    <span class="text-[9px] text-emerald-600 font-black tracking-widest">PILIH</span>
+                                    <input type="checkbox" id="chkSelectAllKumpul" onclick="toggleSelectAllKumpul(this)" class="cursor-pointer" style="appearance: auto; width: 16px; height: 16px;" title="Pilih semua yang tertampil">
+                                </div>
+                            </th>
+                            <th rowspan="2" class="px-4 py-3 text-center border-r border-slate-200 w-12">No</th>
+                            <th rowspan="2" class="px-4 py-3 border-r border-slate-200">NIS</th>
+                            <th rowspan="2" class="px-4 py-3 border-r border-slate-200 min-w-[180px]">Nama Siswa</th>
+                            <th rowspan="2" class="px-4 py-3 border-r border-slate-200 text-center">Kelas</th>
+                            <th rowspan="2" class="px-4 py-3 border-r border-slate-200 min-w-[150px]">Nama Tugas</th>
+                            <th colspan="2" class="px-4 py-3 text-center border-r border-slate-200 border-b">Waktu Tugas</th>
+                            <th rowspan="2" class="px-4 py-3 text-center border-r border-slate-200 w-32">Status</th>
+                            <th rowspan="2" class="px-4 py-3 text-center border-r border-slate-200 w-20">Nilai</th>
+                            <th rowspan="2" class="px-4 py-3 text-center w-24">Aksi</th>
+                        </tr>
+                        <tr>
+                            <th class="px-4 py-2 text-center border-r border-slate-200 text-[10px]">Dibuat</th>
+                            <th class="px-4 py-2 text-center border-r border-slate-200 text-[10px]">Dikumpulkan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelNilaiDetailBody" class="text-sm text-slate-700 divide-y divide-slate-100">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- PAGINASI NILAI DETAIL -->
+            <div id="paginationNilaiDetail" class="flex flex-col sm:flex-row justify-between items-center px-4 py-3 bg-white border-t border-slate-200 sm:px-6 rounded-b-2xl">
+                <!-- Data Paginasi Akan Dirender Disini -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KOREKSI SATUAN -->
+    <div id="modalKoreksiTugas" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-fade">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
+                <h3 class="font-bold text-lg text-indigo-800"><i class="fa-solid fa-pen-nib text-indigo-600 mr-2"></i> Koreksi Jawaban Siswa</h3>
+                <button onclick="closeModalKoreksi()" class="text-indigo-400 hover:text-red-500 transition-colors w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                    <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 text-xl"><i class="fa-solid fa-user"></i></div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-lg leading-tight" id="koreksiNamaSiswa">Nama</h4>
+                        <p class="text-xs font-bold text-slate-500">NIS: <span id="koreksiNisSiswa"></span> &bull; <span id="koreksiKelasSiswa"></span></p>
+                    </div>
+                </div>
+
+                <h5 class="text-sm font-bold text-slate-800 mb-3"><i class="fa-solid fa-folder-open text-indigo-500 mr-1"></i> Data Terlampir:</h5>
+                <div class="space-y-4 mb-6">
+                    <div id="koreksiTeksContainer" class="hidden">
+                        <span class="text-xs font-bold text-slate-500">Teks:</span>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm mt-1 whitespace-pre-wrap" id="koreksiDataTeks"></div>
+                    </div>
+                    
+                    <div id="koreksiFotoContainer" class="hidden">
+                        <span class="text-xs font-bold text-slate-500 mb-1 block">Foto (Klik untuk perbesar):</span>
+                        <div class="mt-1 relative inline-block group">
+                            <img src="" id="koreksiDataFoto" onclick="perbesarFotoKoreksi()" class="max-w-xs rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:opacity-80 transition-all" title="Klik untuk memperbesar">
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div class="bg-black/60 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm">
+                                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="koreksiVideoContainer" class="hidden mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-slate-500">Video Jawaban:</span>
+                            <a id="koreksiLinkVideo" href="#" target="_blank" class="text-[10px] font-bold bg-blue-50 text-blue-600 px-3 py-1.5 rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1 shadow-sm border border-blue-200">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Putar di Tab Baru
+                            </a>
+                        </div>
+                        <div class="mt-1 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 relative shadow-inner">
+                            <iframe id="koreksiDataVideo" src="" class="w-full h-64 md:h-80 border-0 relative z-10" allow="autoplay" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    
+                    <div id="koreksiFileContainer" class="hidden">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-slate-500">Dokumen File:</span>
+                            <a id="koreksiLinkFile" href="#" target="_blank" class="text-[10px] font-bold bg-rose-50 text-rose-600 px-2 py-1 rounded-md hover:bg-rose-100 transition-colors flex items-center gap-1 shadow-sm"><i class="fa-solid fa-arrow-up-right-from-square"></i> Buka di Tab Baru</a>
+                        </div>
+                        <div class="mt-1 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 relative">
+                            <iframe id="koreksiDataFile" src="" class="w-full h-96 border-0 relative z-10" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="formSimpanNilai" onsubmit="submitSimpanNilai(event)">
+                    <input type="hidden" id="inpKoreksiIdKumpul">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Beri Nilai <span class="text-red-500">*</span></label>
+                            <input type="number" id="inpNilaiAngka" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 font-bold text-lg" required min="0" max="100" placeholder="0 - 100">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Catatan/Umpan Balik</label>
+                            <textarea id="inpCatatanGuru" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm resize-none" placeholder="Bagus! Tingkatkan lagi..."></textarea>
+                        </div>
+                    </div>
+                    <div class="flex justify-end border-t border-slate-100 pt-4">
+                        <button type="submit" id="btnSimpanNilai" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-indigo-200 flex items-center gap-2">
+                            <span>Simpan Nilai</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KOREKSI MASSAL (DENGAN PENILAIAN INDIVIDUAL TIAP SISWA) -->
+    <div id="modalKoreksiMassal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col animate-fade">
+            
+            <!-- HEADER (Terkunci) -->
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-emerald-50 shrink-0">
+                <h3 class="font-bold text-lg text-emerald-800"><i class="fa-solid fa-check-double text-emerald-600 mr-2"></i> Koreksi Massal (<span id="lblCountMassal">0</span> Siswa)</h3>
+                <button onclick="closeModalKoreksiMassal()" class="text-emerald-400 hover:text-red-500 transition-colors w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <!-- BODY (Area Scrollable) -->
+            <div class="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col bg-slate-50/50">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-5 flex items-start gap-2 shadow-sm shrink-0">
+                    <i class="fa-solid fa-circle-info text-yellow-500 text-sm mt-0.5"></i>
+                    <p class="text-xs text-yellow-700 leading-tight">
+                        Silakan tinjau pekerjaan siswa dan <b>masukkan nilai pada masing-masing kotak</b> di bawah ini sebelum menekan tombol simpan di bagian bawah layar.
+                    </p>
+                </div>
+                
+                <!-- CONTAINER LIST JAWABAN SISWA -->
+                <div class="mb-2">
+                    <h4 class="font-bold text-sm text-slate-700 mb-3"><i class="fa-solid fa-users-viewfinder text-slate-400 mr-2"></i>Tinjauan & Penilaian:</h4>
+                    <div id="containerJawabanMassal" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <!-- Card Jawaban & Input Nilai akan digenerate via Javascript disini -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER DENGAN TOMBOL SIMPAN & BATAL (Terkunci di bawah) -->
+            <div class="px-6 py-4 border-t border-slate-100 bg-white shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] relative z-10">
+                <form id="formSimpanNilaiMassal" onsubmit="submitSimpanNilaiMassal(event)" class="m-0">
+                    <div class="flex justify-end gap-3 items-center">
+                        <button type="button" onclick="closeModalKoreksiMassal()" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-all shadow-sm">Batal</button>
+                        <button type="submit" id="btnSimpanNilaiMassal" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-emerald-200 transition-all flex items-center gap-2">
+                            <span>Simpan Semua Nilai</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+        </div>
+    </div>
+</template>
+
+<script>
+    // ==========================================
+    // CACHE SYSTEM & GLOBAL STATES (ANTI-DELAY)
+    // ==========================================
+    var zCache_tugasLoaded = false;
+    var zCache_tugasNilaiLoaded = false;
+    var zCache_tugasNilaiData = null;
+
+    var zState_mapingGuru = [];
+    
+    // Variabel Pagination Manajemen Tugas
+    var zState_tugasData = []; 
+    var zState_filteredTugas = [];
+    var zState_pageTugas = 1;
+    var zState_limitTugas = 10;
+    
+    // Variabel Pagination Detail Nilai Tugas
+    var zState_detailKumpul = []; 
+    var zState_filteredKumpul = []; 
+    var zState_pageNilaiDetail = 1;
+    var zState_limitNilaiDetail = 10;
+    
+    // Variabel State Centang Massal
+    var zState_selectedKumpul = [];
+
+    // ==========================================
+    // UTILITY SWEETALERT2 TOAST (TOP-RIGHT)
+    // ==========================================
+    const ZettToast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+
+    function showToast(type, message, duration = 3000) {
+        ZettToast.fire({
+            icon: type, // 'success', 'error', 'warning', 'info'
+            title: message,
+            timer: duration
+        });
+    }
+
+    let activeLoadingToast = null;
+    function showLoadingToast(message) {
+        activeLoadingToast = Swal.fire({
+            toast: true,
+            position: 'top-end',
+            title: message,
+            didOpen: () => {
+                Swal.showLoading();
+            },
+            showConfirmButton: false,
+            allowOutsideClick: false
+        });
+    }
+
+    function closeLoadingToast() {
+        if (activeLoadingToast) {
+            Swal.close();
+            activeLoadingToast = null;
+        }
+    }
+
+    // ==========================================
+    // BACKGROUND PREFETCHING (SENYAP TANPA DELAY)
+    // ==========================================
+    function prefetchModulData() {
+        if (!currentUser) return;
+        
+        // 1. Prefetch Manajemen Tugas
+        if (!zCache_tugasLoaded) {
+            google.script.run.withSuccessHandler(res => {
+                if(res.status === 'success') {
+                    zState_tugasData = res.data;
+                    zState_filteredTugas = [...res.data];
+                    zCache_tugasLoaded = true;
+                    // Jika user sedang berada di menu Manajemen Tugas, langsung render datanya
+                    const tbody = document.getElementById('tabelTugasBody');
+                    if (tbody && tbody.querySelector('#loadingRowTugas')) {
+                        renderTugasTable();
+                    }
+                }
+            }).getTugasManajemenData();
+        }
+
+        // 2. Prefetch Nilai Tugas
+        if (!zCache_tugasNilaiLoaded) {
+            google.script.run.withSuccessHandler(res => {
+                if(res.status === 'success') {
+                    zCache_tugasNilaiData = res.data;
+                    zCache_tugasNilaiLoaded = true;
+                    // Jika user sedang berada di menu Nilai Tugas, langsung render datanya
+                    const container = document.getElementById('containerNilaiKartu');
+                    if (container && container.querySelector('.loader-spin')) {
+                        renderTugasNilaiCards(res.data);
+                    }
+                }
+            }).getDaftarTugasUntukDinilai(currentUser);
+        }
+        
+        // 3. Prefetch Mapping Guru
+        fetchMapingGuruForDropdown();
+    }
+
+    // Trigger prefetch otomatis saat login terdeteksi
+    (function() {
+        let waitUserInterval = setInterval(() => {
+            if (typeof currentUser !== 'undefined' && currentUser) {
+                clearInterval(waitUserInterval);
+                prefetchModulData();
+            }
+        }, 300);
+    })();
+
+    // Fungsi Format Tanggal
+    function formatTanggalTeks(dateString) {
+        if (!dateString || dateString === '-') return '-';
+        if(dateString.includes('-')) {
+            let parts = dateString.split(' ');
+            let dateParts = parts[0].split('-');
+            if(dateParts.length === 3) {
+                const bulanIndo = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+                let year = dateParts[0];
+                let monthIdx = parseInt(dateParts[1]) - 1;
+                let day = parseInt(dateParts[2]);
+                let timePart = parts[1] || '';
+                if(monthIdx >= 0 && monthIdx <= 11) {
+                     return `${day} ${bulanIndo[monthIdx]} ${year}<br><span class="text-[9px] text-indigo-500 font-bold">${timePart}</span>`;
+                }
+            }
+        }
+        return dateString;
+    }
+
+    function formatTanggalCetak(dateString) {
+        if (!dateString || dateString === '-') return '-';
+        if(dateString.includes('-')) {
+            let parts = dateString.split(' ');
+            let dateParts = parts[0].split('-');
+            if(dateParts.length === 3) {
+                const bulanIndo = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+                let year = dateParts[0];
+                let monthIdx = parseInt(dateParts[1]) - 1;
+                let day = parseInt(dateParts[2]);
+                let timePart = parts[1] || '';
+                if(monthIdx >= 0 && monthIdx <= 11) {
+                     return `${day} ${bulanIndo[monthIdx]} ${year} ${timePart}`;
+                }
+            }
+        }
+        return dateString;
+    }
+
+    function initModulTugas() {
+        const isGuru = currentUser && currentUser.role.toLowerCase() === 'guru';
+        const colHeaderGuru = document.getElementById('colHeaderGuru');
+        if (colHeaderGuru) {
+            if (isGuru) colHeaderGuru.classList.add('hidden');
+            else colHeaderGuru.classList.remove('hidden');
+        }
+
+        // Jika cache sudah siap, langsung render instan tanpa loading
+        if (zCache_tugasLoaded) {
+            renderTugasTable();
+        } else {
+            fetchDataTugasTable();
+        }
+
+        if (zState_mapingGuru && zState_mapingGuru.length > 0) {
+            renderMapingGuruDropdown(zState_mapingGuru);
+        } else {
+            fetchMapingGuruForDropdown();
+        }
+    }
+
+    function fetchMapingGuruForDropdown() {
+        google.script.run.withSuccessHandler(res => {
+            if(res.status === 'success') {
+                zState_mapingGuru = res.data;
+                renderMapingGuruDropdown(res.data);
+            }
+        }).getMapingGuruForTugasList();
+    }
+
+    function renderMapingGuruDropdown(data) {
+        const selectGuru = document.getElementById('inpTugasGuru');
+        if(selectGuru) {
+            selectGuru.innerHTML = '<option value="">-- Pilih Guru / Mapel --</option>';
+            data.forEach(item => {
+                const kelasJson = JSON.stringify(item.kelasList).replace(/'/g, "&#39;");
+                selectGuru.innerHTML += `<option value="${item.guru}" data-mapel="${item.mapel}" data-kelas='${kelasJson}'>${item.guru} - ${item.mapel}</option>`;
+            });
+        }
+    }
+
+    function autoFillMapelTugas(isEditMode = false, existingKelas = '') {
+        const selectGuru = document.getElementById('inpTugasGuru');
+        const selectedOption = selectGuru.options[selectGuru.selectedIndex];
+        const inputMapel = document.getElementById('inpTugasMapel');
+        const selectKelas = document.getElementById('inpTugasKelas');
+        
+        selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        if(selectedOption && selectedOption.value !== "") {
+            inputMapel.value = selectedOption.getAttribute('data-mapel') || '-';
+            const kelasRaw = selectedOption.getAttribute('data-kelas');
+            if(kelasRaw) {
+                try {
+                    const kelasList = JSON.parse(kelasRaw.replace(/&#39;/g, "'"));
+                    kelasList.forEach(k => { selectKelas.innerHTML += `<option value="${k}">${k}</option>`; });
+                } catch(e) {}
+            }
+        } else { inputMapel.value = ''; }
+
+        if (isEditMode && existingKelas) selectKelas.value = existingKelas;
+    }
+
+    function fetchDataTugasTable() {
+        const tbody = document.getElementById('tabelTugasBody');
+        const isGuru = currentUser && currentUser.role.toLowerCase() === 'guru';
+        const colSpanCount = isGuru ? 12 : 13; 
+        
+        tbody.innerHTML = `<tr><td colspan="${colSpanCount}" class="px-4 py-8 text-center text-slate-500"><div class="loader-spin border-slate-300 border-t-indigo-600 mb-2"></div><br>Memuat data tugas...</td></tr>`;
+        
+        google.script.run.withSuccessHandler(res => {
+            if(res.status === 'success') {
+                zState_tugasData = res.data;
+                zState_filteredTugas = [...res.data];
+                zCache_tugasLoaded = true;
+                zState_pageTugas = 1;
+                renderTugasTable();
+            } else {
+                tbody.innerHTML = `<tr><td colspan="${colSpanCount}" class="px-4 py-8 text-center text-red-500">${res.message}</td></tr>`;
+            }
+        }).getTugasManajemenData();
+    }
+
+    // ==========================================
+    // REUSABLE ROW GENERATOR (PARTIAL RENDERING)
+    // ==========================================
+    function getTugasRowInnerHtml(t, globalIndex) {
+        const isGuru = currentUser && currentUser.role.toLowerCase() === 'guru';
+        const checkIcon = (val) => val === true || val === "TRUE" ? '<i class="fa-solid fa-check text-emerald-500"></i>' : '<i class="fa-solid fa-minus text-slate-300"></i>';
+        const fmtSplitDate = (d, timeStrRaw) => {
+            if(!d) return '-';
+            let dStr = String(d).replace(/'/g, "");
+            let year, monthIdx, day;
+            if(dStr.includes('-')) {
+                const parts = dStr.split('-');
+                year = parts[0]; monthIdx = parseInt(parts[1]) - 1; day = parseInt(parts[2]);
+            } else return `${d} ${timeStrRaw}`; 
+            
+            const bulanIndo = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+            const month = bulanIndo[monthIdx];
+            const dayStr = String(day).padStart(2, '0');
+            let tStr = timeStrRaw ? String(timeStrRaw).replace(/'/g, "") : '00:00';
+            return `${dayStr} ${month} ${year} <br><span class="text-indigo-500 font-bold">${tStr}</span>`;
+        };
+        
+        const isBuka = t.status === 'Buka';
+        const toggleClass = isBuka ? 'text-indigo-600' : 'text-slate-400';
+        const toggleIcon = isBuka ? 'fa-toggle-on' : 'fa-toggle-off';
+        const statusLabel = isBuka ? '<span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[10px] font-bold shadow-sm">Buka</span>' : '<span class="bg-slate-100 text-slate-500 px-2 py-1 rounded text-[10px] font-bold shadow-sm">Tutup</span>';
+
+        const tdGuru = isGuru ? '' : `<td class="px-4 py-3 border-r border-slate-100"><div class="font-bold text-slate-800">${t.guru}</div></td>`;
+
+        return `
+            <td class="px-4 py-3 text-center border-r border-slate-100 font-medium">${globalIndex}</td>
+            ${tdGuru}
+            <td class="px-4 py-3 border-r border-slate-100 text-xs font-semibold text-indigo-600 bg-indigo-50/30">${t.mapel}</td>
+            <td class="px-4 py-3 border-r border-slate-100"><div class="font-bold text-slate-800 line-clamp-2">${t.judul}</div></td>
+            <td class="px-4 py-3 border-r border-slate-100 text-xs font-bold text-slate-600 whitespace-nowrap text-center">${t.kelas}</td>
+            <td class="px-4 py-3 border-r border-slate-100 text-[10px] whitespace-nowrap text-center">${fmtSplitDate(t.tglMulai, t.jamMulai)}</td>
+            <td class="px-4 py-3 border-r border-slate-100 text-[10px] whitespace-nowrap text-red-600 font-medium text-center bg-red-50/30">${fmtSplitDate(t.tglSelesai, t.jamSelesai)}</td>
+            <td class="px-2 py-3 text-center border-r border-slate-100 bg-slate-50/50">${checkIcon(t.reqTeks)}</td>
+            <td class="px-2 py-3 text-center border-r border-slate-100 bg-slate-50/50">${checkIcon(t.reqFoto)}</td>
+            <td class="px-2 py-3 text-center border-r border-slate-100 bg-slate-50/50">${checkIcon(t.reqVideo)}</td>
+            <td class="px-2 py-3 text-center border-r border-slate-100 bg-slate-50/50">${checkIcon(t.reqFile)}</td>
+            <td class="px-4 py-3 text-center border-r border-slate-100">
+                <button onclick="toggleStatusTugas('${t.id}', '${t.status}')" class="flex flex-col items-center justify-center gap-1 mx-auto hover:scale-110 transition-transform" title="Klik untuk ubah status">
+                    <i class="fa-solid ${toggleIcon} text-2xl ${toggleClass}"></i>
+                    ${statusLabel}
+                </td>
+            <td class="px-4 py-3 text-center border-r border-slate-100">
+                <div class="flex items-center justify-center gap-2">
+                    <button onclick="editTugas('${t.id}')" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors flex items-center justify-center shadow-sm border border-slate-200" title="Edit Tugas">
+                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                    </button>
+                    <button onclick="hapusTugas('${t.id}')" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 transition-colors flex items-center justify-center shadow-sm border border-slate-200" title="Hapus Tugas">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+    }
+
+    function renderTugasTable() {
+        const data = zState_filteredTugas;
+        const tbody = document.getElementById('tabelTugasBody');
+        const paginationContainer = document.getElementById('paginationTugas');
+        const isGuru = currentUser && currentUser.role.toLowerCase() === 'guru';
+        const colSpanCount = isGuru ? 12 : 13;
+
+        if(!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${colSpanCount}" class="px-4 py-8 text-center text-slate-500 bg-slate-50/50"><i class="fa-solid fa-folder-open text-3xl text-slate-300 mb-3 block"></i> Belum ada tugas yang dibuat.</td></tr>`;
+            if(paginationContainer) paginationContainer.innerHTML = '';
+            return;
+        }
+
+        const startIndex = (zState_pageTugas - 1) * zState_limitTugas;
+        const endIndex = startIndex + zState_limitTugas;
+        const paginatedData = data.slice(startIndex, endIndex);
+
+        let html = '';
+        paginatedData.forEach((t, i) => {
+            const globalIndex = startIndex + i + 1;
+            html += `<tr id="row-tugas-${t.id}" data-id="${t.id}" class="hover:bg-indigo-50/30 transition-colors">${getTugasRowInnerHtml(t, globalIndex)}</tr>`;
+        });
+        tbody.innerHTML = html;
+        
+        renderPaginationControlsTugas(data.length);
+    }
+
+    function renderPaginationControlsTugas(totalItems) {
+        const totalPages = Math.ceil(totalItems / zState_limitTugas);
+        const container = document.getElementById('paginationTugas');
+        if(!container) return;
+
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const startIndex = (zState_pageTugas - 1) * zState_limitTugas + 1;
+        const endIndex = Math.min(startIndex + zState_limitTugas - 1, totalItems);
+
+        let btnHtml = `
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between w-full">
+            <div>
+                <p class="text-sm text-slate-700">
+                    Menampilkan <span class="font-medium">${startIndex}</span> sampai <span class="font-medium">${endIndex}</span> dari <span class="font-medium">${totalItems}</span> tugas
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <button onclick="changePageTugas(${zState_pageTugas - 1})" ${zState_pageTugas === 1 ? 'disabled class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-slate-50 text-sm font-medium text-slate-400 cursor-not-allowed"' : 'class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 transition-colors"'}>
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+        `;
+
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === zState_pageTugas) {
+                btnHtml += `<button aria-current="page" class="z-10 bg-indigo-50 border-indigo-500 text-indigo-600 relative inline-flex items-center px-4 py-2 border text-sm font-bold shadow-inner">${i}</button>`;
+            } else {
+                btnHtml += `<button onclick="changePageTugas(${i})" class="bg-white border-slate-300 text-slate-500 hover:bg-slate-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors">${i}</button>`;
+            }
+        }
+
+        btnHtml += `
+                    <button onclick="changePageTugas(${zState_pageTugas + 1})" ${zState_pageTugas === totalPages ? 'disabled class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-slate-50 text-sm font-medium text-slate-400 cursor-not-allowed"' : 'class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 transition-colors"'}>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </nav>
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-between sm:hidden w-full">
+            <button onclick="changePageTugas(${zState_pageTugas - 1})" ${zState_pageTugas === 1 ? 'disabled class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-400 bg-slate-50 cursor-not-allowed"' : 'class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition-colors"'}>
+                Seblm
+            </button>
+            <span class="text-sm font-medium text-slate-700">Hal ${zState_pageTugas} / ${totalPages}</span>
+            <button onclick="changePageTugas(${zState_pageTugas + 1})" ${zState_pageTugas === totalPages ? 'disabled class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-400 bg-slate-50 cursor-not-allowed"' : 'class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition-colors"'}>
+                Lanjut
+            </button>
+        </div>
+        `;
+
+        container.innerHTML = btnHtml;
+    }
+
+    function changePageTugas(newPage) {
+        const totalPages = Math.ceil(zState_filteredTugas.length / zState_limitTugas);
+        if (newPage >= 1 && newPage <= totalPages) {
+            zState_pageTugas = newPage;
+            renderTugasTable();
+        }
+    }
+
+    function showModalFormTugas() {
+        document.getElementById('formTambahTugas').reset();
+        document.getElementById('inpTugasIdEdit').value = '';
+        document.getElementById('inpTugasMapel').value = '';
+        document.getElementById('inpTugasKelas').innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        document.getElementById('modalFormTitle').innerHTML = '<i class="fa-solid fa-list-check text-indigo-600 mr-2"></i> Form Tambah Tugas';
+        document.getElementById('btnSimpanTugas').innerHTML = '<span>Simpan Tugas</span>';
+        document.getElementById('lblTugasFoto').innerHTML = 'Foto Instruksi <span class="text-slate-400 font-normal text-xs">(Opsional)</span>';
+        
+        const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('inpTugasMulai').value = now.toISOString().slice(0, 16);
+        const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('inpTugasSelesai').value = tomorrow.toISOString().slice(0, 16);
+
+        if (currentUser && currentUser.role.toLowerCase() === 'guru') {
+            document.getElementById('containerGuruMapelAdmin').classList.add('hidden');
+            document.getElementById('inpTugasGuru').removeAttribute('required'); 
+            document.getElementById('lblGuruName').innerText = currentUser.nama;
+            const myMaping = zState_mapingGuru.find(m => m.guru.toLowerCase() === currentUser.nama.toLowerCase());
+            document.getElementById('lblGuruMapel').innerText = myMaping ? myMaping.mapel : '-';
+            const selectKelas = document.getElementById('inpTugasKelas');
+            selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+            if(myMaping && myMaping.kelasList) { myMaping.kelasList.forEach(k => { selectKelas.innerHTML += `<option value="${k}">${k}</option>`; }); }
+            document.getElementById('containerGuruMapelGuru').classList.remove('hidden');
+        } else {
+            document.getElementById('containerGuruMapelAdmin').classList.remove('hidden');
+            document.getElementById('inpTugasGuru').setAttribute('required', 'true');
+            document.getElementById('containerGuruMapelGuru').classList.add('hidden');
+        }
+        document.getElementById('modalFormTugas').classList.remove('hidden');
+    }
+
+    function closeModalFormTugas() { document.getElementById('modalFormTugas').classList.add('hidden'); }
+
+    function editTugas(id) {
+        const t = zState_tugasData.find(x => x.id === id);
+        if(!t) return showToast('error', 'Data tidak ditemukan.');
+        showModalFormTugas(); 
+        document.getElementById('inpTugasIdEdit').value = t.id;
+        document.getElementById('modalFormTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-indigo-600 mr-2"></i> Form Edit Tugas';
+        document.getElementById('btnSimpanTugas').innerHTML = '<span>Update Tugas</span>';
+        document.getElementById('inpTugasJudul').value = t.judul;
+        document.getElementById('inpTugasInstruksi').value = t.instruksi;
+        
+        const toDateTimeLocal = (d, timeStrRaw) => { if(!d) return ''; return `${String(d).replace(/'/g, "")}T${timeStrRaw ? String(timeStrRaw).replace(/'/g, "") : '00:00'}`; };
+        document.getElementById('inpTugasMulai').value = toDateTimeLocal(t.tglMulai, t.jamMulai);
+        document.getElementById('inpTugasSelesai').value = toDateTimeLocal(t.tglSelesai, t.jamSelesai);
+        document.getElementById('chkJenisTeks').checked = (t.reqTeks === true || t.reqTeks === "TRUE");
+        document.getElementById('chkJenisFoto').checked = (t.reqFoto === true || t.reqFoto === "TRUE");
+        document.getElementById('chkJenisVideo').checked = (t.reqVideo === true || t.reqVideo === "TRUE");
+        document.getElementById('chkJenisFile').checked = (t.reqFile === true || t.reqFile === "TRUE");
+
+        if (!(currentUser && currentUser.role.toLowerCase() === 'guru')) {
+            document.getElementById('inpTugasGuru').value = t.guru;
+            autoFillMapelTugas(true, t.kelas);
+        } else { document.getElementById('inpTugasKelas').value = t.kelas; }
+    }
+
+    async function submitFormTugas(e) {
+        e.preventDefault();
+        const isTeks = document.getElementById('chkJenisTeks').checked;
+        const isFoto = document.getElementById('chkJenisFoto').checked;
+        const isVideo = document.getElementById('chkJenisVideo').checked;
+        const isFile = document.getElementById('chkJenisFile').checked;
+        const idTugasEdit = document.getElementById('inpTugasIdEdit').value;
+
+        if(!isTeks && !isFoto && !isVideo && !isFile) return showToast('warning', 'Minimal pilih satu jenis bukti!');
+
+        let finalGuru = "", finalMapel = "";
+        if (currentUser && currentUser.role.toLowerCase() === 'guru') { finalGuru = currentUser.nama; finalMapel = document.getElementById('lblGuruMapel').innerText; } 
+        else { finalGuru = document.getElementById('inpTugasGuru').value; finalMapel = document.getElementById('inpTugasMapel').value; if(!finalGuru) return showToast('warning', 'Pilih Guru!'); }
+
+        const payload = {
+            idTugasEdit: idTugasEdit, guru: finalGuru, mapel: finalMapel, kelas: document.getElementById('inpTugasKelas').value, 
+            judul: document.getElementById('inpTugasJudul').value, mulai: document.getElementById('inpTugasMulai').value,
+            selesai: document.getElementById('inpTugasSelesai').value, instruksi: document.getElementById('inpTugasInstruksi').value,
+            reqTeks: isTeks, reqFoto: isFoto, reqVideo: isVideo, reqFile: isFile, fotoBase64: ""
+        };
+
+        const btnText = idTugasEdit ? 'Update Tugas' : 'Simpan Tugas';
+        setBtnLoading('btnSimpanTugas', true, 'Memproses...');
+
+        try {
+            const fileFoto = document.getElementById('inpTugasFoto').files.length > 0 ? document.getElementById('inpTugasFoto').files[0] : null;
+            if(fileFoto) payload.fotoBase64 = await toBase64AndCompress(fileFoto, 800);
+
+            google.script.run.withSuccessHandler(res => {
+                setBtnLoading('btnSimpanTugas', false, btnText);
+                if(res.status === 'success') { 
+                    showToast('success', idTugasEdit ? 'Tugas berhasil diperbarui.' : 'Tugas berhasil disimpan.'); 
+                    closeModalFormTugas(); 
+                    
+                    // PARTIAL RENDERING (Dom-based / In-Memory update)
+                    if (idTugasEdit) {
+                        const updatedTugas = res.data;
+                        const idx = zState_tugasData.findIndex(x => x.id === updatedTugas.id);
+                        if (idx !== -1) {
+                            if (!updatedTugas.fotoBase64 || updatedTugas.fotoBase64.trim() === '') {
+                                updatedTugas.fotoBase64 = zState_tugasData[idx].fotoBase64;
+                            }
+                            zState_tugasData[idx] = updatedTugas;
+                        }
+                        const fIdx = zState_filteredTugas.findIndex(x => x.id === updatedTugas.id);
+                        if (fIdx !== -1) {
+                            if (!updatedTugas.fotoBase64 || updatedTugas.fotoBase64.trim() === '') {
+                                updatedTugas.fotoBase64 = zState_filteredTugas[fIdx].fotoBase64;
+                            }
+                            zState_filteredTugas[fIdx] = updatedTugas;
+                        }
+                        
+                        // Render ulang baris terkait saja
+                        const rowEl = document.getElementById(`row-tugas-${updatedTugas.id}`);
+                        if (rowEl) {
+                            const globalIndex = zState_filteredTugas.findIndex(x => x.id === updatedTugas.id) + 1;
+                            rowEl.innerHTML = getTugasRowInnerHtml(updatedTugas, globalIndex);
+                            rowEl.classList.add('bg-emerald-50');
+                            setTimeout(() => rowEl.classList.remove('bg-emerald-50'), 1500);
+                        }
+                    } else {
+                        // Tambah tugas baru di paling depan
+                        const newTugas = res.data;
+                        zState_tugasData.unshift(newTugas);
+                        zState_filteredTugas.unshift(newTugas);
+                        
+                        // Kembalikan ke halaman 1 dan render lokal cepat
+                        zState_pageTugas = 1;
+                        renderTugasTable();
+                        
+                        // Efek highlight baris baru
+                        setTimeout(() => {
+                            const newRow = document.getElementById(`row-tugas-${newTugas.id}`);
+                            if (newRow) {
+                                newRow.classList.add('bg-emerald-50');
+                                setTimeout(() => newRow.classList.remove('bg-emerald-50'), 2000);
+                            }
+                        }, 100);
+                    }
+                    
+                    // Perbarui cache Nilai juga agar sinkron
+                    zCache_tugasNilaiLoaded = false;
+                    prefetchModulData();
+
+                } else {
+                    showToast('error', res.message);
+                }
+            }).withFailureHandler(err => { 
+                setBtnLoading('btnSimpanTugas', false, btnText); 
+                showToast('error', 'Gagal memproses ke server.'); 
+            })[idTugasEdit ? 'updateDataTugasBackend' : 'simpanDataTugasBaru'](payload);
+        } catch (error) { 
+            setBtnLoading('btnSimpanTugas', false, btnText); 
+            showToast('error', 'Gagal memproses gambar.'); 
+        }
+    }
+
+    function hapusTugas(id) {
+        Swal.fire({ 
+            title: 'Hapus Tugas?', 
+            text: 'Tindakan ini tidak dapat dibatalkan.',
+            icon: 'warning', 
+            showCancelButton: true, 
+            confirmButtonColor: '#ef4444', 
+            confirmButtonText: 'Ya, Hapus!' 
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoadingToast('Sedang menghapus tugas...');
+                google.script.run.withSuccessHandler(res => {
+                    closeLoadingToast();
+                    if(res.status === 'success') { 
+                        showToast('success', 'Data tugas berhasil dihapus.'); 
+                        
+                        // Hapus dari data memory
+                        zState_tugasData = zState_tugasData.filter(x => x.id !== id);
+                        zState_filteredTugas = zState_filteredTugas.filter(x => x.id !== id);
+                        
+                        // Animasi hapus baris dari DOM sebelum render ulang pagination
+                        const rowEl = document.getElementById(`row-tugas-${id}`);
+                        if (rowEl) {
+                            rowEl.classList.add('opacity-0', 'scale-95', 'transition-all', 'duration-500');
+                            setTimeout(() => {
+                                rowEl.remove();
+                                renderTugasTable(); 
+                            }, 500);
+                        }
+                        
+                        // Perbarui cache Nilai
+                        zCache_tugasNilaiLoaded = false;
+                        prefetchModulData();
+                    } else {
+                        showToast('error', res.message);
+                    }
+                }).hapusDataTugasBackend(id);
+            }
+        });
+    }
+
+    function toggleStatusTugas(id, stat) {
+        const nextStatus = stat === 'Buka' ? 'Tutup' : 'Buka';
+        Swal.fire({ 
+            title: 'Ubah Status Tugas?', 
+            icon: 'question', 
+            showCancelButton: true, 
+            confirmButtonColor: '#4f46e5', 
+            confirmButtonText: 'Ya, Ubah!' 
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoadingToast('Memproses pembaruan status...');
+                google.script.run.withSuccessHandler(res => {
+                    closeLoadingToast();
+                    if(res.status === 'success') { 
+                        showToast('success', 'Status berhasil diperbarui.'); 
+                        
+                        // Update memory lokal
+                        const t = zState_tugasData.find(x => x.id === id);
+                        if (t) t.status = nextStatus;
+                        const ft = zState_filteredTugas.find(x => x.id === id);
+                        if (ft) ft.status = nextStatus;
+
+                        // Update DOM baris bersangkutan saja
+                        const rowEl = document.getElementById(`row-tugas-${id}`);
+                        if (rowEl) {
+                            const globalIndex = zState_filteredTugas.findIndex(x => x.id === id) + 1;
+                            rowEl.innerHTML = getTugasRowInnerHtml(ft, globalIndex);
+                            rowEl.classList.add('bg-indigo-50/50');
+                            setTimeout(() => rowEl.classList.remove('bg-indigo-50/50'), 1000);
+                        }
+                        
+                        // Bersihkan cache Nilai agar tetap sinkron
+                        zCache_tugasNilaiLoaded = false;
+                        prefetchModulData();
+                    } else {
+                        showToast('error', res.message);
+                    }
+                }).toggleStatusTugasBackend(id, nextStatus);
+            }
+        });
+    }
+
+    function initTugasNilai() {
+        const container = document.getElementById('containerNilaiKartu');
+        
+        // Memakai Cache Data jika sudah ter-prefetch senyap sebelumnya
+        if(zCache_tugasNilaiLoaded && zCache_tugasNilaiData) {
+            renderTugasNilaiCards(zCache_tugasNilaiData);
+        } else {
+            container.innerHTML = '<div class="col-span-full p-8 text-center text-slate-500 bg-white rounded-2xl"><div class="loader-spin border-t-indigo-600 mb-2"></div><br>Memuat kartu tugas...</div>';
+            google.script.run.withSuccessHandler(res => {
+                if(res.status === 'success') {
+                    zCache_tugasNilaiData = res.data;
+                    zCache_tugasNilaiLoaded = true;
+                    renderTugasNilaiCards(res.data);
+                } else {
+                    container.innerHTML = `<div class="col-span-full p-8 text-center text-red-500">${res.message}</div>`;
+                }
+            }).getDaftarTugasUntukDinilai(currentUser);
+        }
+    }
+
+    function renderTugasNilaiCards(data) {
+        const container = document.getElementById('containerNilaiKartu');
+        if(!data || data.length === 0) {
+            container.innerHTML = `<div class="col-span-full p-8 text-center bg-white rounded-2xl border border-slate-100"><i class="fa-solid fa-mug-hot text-4xl text-slate-300 mb-3"></i><p class="text-slate-500 font-medium">Belum ada data tugas untuk dinilai.</p></div>`;
+            return;
+        }
+
+        container.innerHTML = data.map(d => {
+            let statusBadge = '';
+            if (d.totKumpul === 0) {
+                statusBadge = `<span class="text-[10px] bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full font-bold flex items-center shadow-sm"><i class="fa-regular fa-clock mr-1"></i> Belum Ada Kumpul</span>`;
+            } else if (d.totKoreksi > 0) {
+                statusBadge = `<span class="text-[10px] bg-rose-100 text-rose-700 px-3 py-1.5 rounded-full font-bold flex items-center shadow-sm animate-pulse"><i class="fa-solid fa-bell mr-1"></i> ${d.totKoreksi} Perlu Koreksi</span>`;
+            } else {
+                statusBadge = `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full font-bold shadow-sm"><i class="fa-solid fa-check mr-1"></i> Semua Dinilai</span>`;
+            }
+
+            return `
+            <div onclick="bukaDetailNilaiTugas('${d.id}')" class="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-2 h-full ${d.totKoreksi > 0 ? 'bg-rose-500' : 'bg-indigo-500'}"></div>
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-md uppercase tracking-wide">${d.mapel}</span>
+                    <span class="text-[10px] text-slate-500 font-bold bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100"><i class="fa-regular fa-calendar mr-1"></i> ${d.tglBuat}</span>
+                </div>
+                <h4 class="font-bold text-slate-800 text-lg mb-1 leading-tight group-hover:text-indigo-600 transition-colors">${d.judul}</h4>
+                <div class="text-xs text-slate-500 font-medium mb-4"><i class="fa-solid fa-users-rectangle text-slate-400 mr-1"></i> Kelas ${d.kelas}</div>
+                
+                <div class="grid grid-cols-2 gap-2 mb-4 text-[10px] font-bold">
+                    <div class="bg-emerald-50 text-emerald-700 border border-emerald-100 p-2 rounded-lg text-center">Sudah Kumpul<br><span class="text-lg">${d.totKumpul}</span></div>
+                    <div class="bg-slate-50 text-slate-500 border border-slate-100 p-2 rounded-lg text-center">Belum Kumpul<br><span class="text-lg">${d.totBelum}</span></div>
+                </div>
+                
+                <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                    <span class="text-xs text-slate-500">Total Siswa: <b>${d.totSiswa}</b></span>
+                    ${statusBadge}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function bukaDetailNilaiTugas(idTugas) {
+        renderTemplate('contentArea', 'tpl-tugas-nilai-detail');
+        
+        zState_selectedKumpul = []; 
+        if(document.getElementById('lblCountBtnMassal')) document.getElementById('lblCountBtnMassal').innerText = '0';
+        if(document.getElementById('chkSelectAllKumpul')) document.getElementById('chkSelectAllKumpul').checked = false;
+        
+        const tbody = document.getElementById('tabelNilaiDetailBody');
+        document.getElementById('paginationNilaiDetail').innerHTML = ''; 
+        
+        tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-8 text-center text-slate-500"><div class="loader-spin border-t-indigo-600 mb-2"></div><br>Mengambil data siswa dan nilai...</td></tr>`;
+        
+        google.script.run.withSuccessHandler(res => {
+            if(res.status === 'success') {
+                let rawData = res.data || [];
+                rawData.sort((a, b) => {
+                    let kelasA = (a.kelas || "").toString().trim().toLowerCase();
+                    let kelasB = (b.kelas || "").toString().trim().toLowerCase();
+                    if (kelasA === kelasB) {
+                        let namaA = (a.nama || "").toString().trim().toLowerCase();
+                        let namaB = (b.nama || "").toString().trim().toLowerCase();
+                        return namaA.localeCompare(namaB);
+                    }
+                    return kelasA.localeCompare(kelasB);
+                });
+
+                zState_detailKumpul = rawData;
+                filterDetailNilaiTugas(); 
+            } else {
+                tbody.innerHTML = `<tr><td colspan="11" class="text-center text-red-500 py-6">${res.message}</td></tr>`;
+            }
+        }).getDetailKumpulanTugas(idTugas);
+    }
+
+    function filterDetailNilaiTugas() {
+        const searchInput = document.getElementById('searchNamaSiswa');
+        const statusSelect = document.getElementById('filterStatusKumpul');
+        
+        if(!zState_detailKumpul) return;
+        
+        const searchVal = searchInput ? searchInput.value.toLowerCase() : "";
+        const statusVal = statusSelect ? statusSelect.value : "Semua";
+        
+        zState_filteredKumpul = zState_detailKumpul.filter(d => {
+            const matchName = d.nama.toLowerCase().includes(searchVal);
+            const matchStatus = statusVal === "Semua" || d.status === statusVal;
+            return matchName && matchStatus;
+        });
+        
+        zState_pageNilaiDetail = 1;
+        renderTabelDetailKumpul();
+    }
+
+    function renderTabelDetailKumpul() {
+        const data = zState_filteredKumpul; 
+        const tbody = document.getElementById('tabelNilaiDetailBody');
+        const paginationContainer = document.getElementById('paginationNilaiDetail');
+        
+        if(zState_detailKumpul && zState_detailKumpul.length > 0) {
+            const dTitle = document.getElementById('detTitleTugas');
+            if(dTitle) dTitle.innerHTML = `Tugas: <span class="text-indigo-600">${zState_detailKumpul[0].tugasJudul}</span> - Kelas ${zState_detailKumpul[0].kelas}`;
+        }
+
+        if(!data || data.length === 0) { 
+            tbody.innerHTML = `<tr><td colspan="11" class="text-center py-8 text-slate-500"><i class="fa-solid fa-folder-open text-3xl mb-3 text-slate-300 block"></i> Tidak ada data yang sesuai dengan pencarian/filter.</td></tr>`; 
+            paginationContainer.innerHTML = '';
+            updateCheckAllCheckboxState();
+            return; 
+        }
+
+        const startIndex = (zState_pageNilaiDetail - 1) * zState_limitNilaiDetail;
+        const endIndex = startIndex + zState_limitNilaiDetail;
+        const paginatedData = data.slice(startIndex, endIndex);
+
+        tbody.innerHTML = paginatedData.map((d, i) => {
+            const globalIndex = startIndex + i + 1;
+            
+            let badgeStatus = '';
+            if(d.status === "Sudah Kumpul") badgeStatus = `<span class="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-md text-[10px] font-bold border border-emerald-200">Lengkap</span>`;
+            else if(d.status === "Kurang Lengkap") badgeStatus = `<span class="bg-yellow-50 text-yellow-600 px-2.5 py-1 rounded-md text-[10px] font-bold border border-yellow-200">Kurang</span>`;
+            else badgeStatus = `<span class="bg-rose-50 text-rose-600 px-2.5 py-1 rounded-md text-[10px] font-bold border border-rose-200">Belum Kumpul</span>`;
+
+            let nilaiHtml = d.nilai !== "" ? `<span class="font-black text-indigo-600 text-base">${d.nilai}</span>` : `<span class="text-slate-300 text-xs">-</span>`;
+            let disableBtn = d.idKumpul === "" ? "disabled opacity-50 cursor-not-allowed" : "";
+            
+            let isChecked = zState_selectedKumpul.includes(d.idKumpul) ? 'checked' : '';
+            let disableChk = d.idKumpul === "" ? "disabled opacity-50 cursor-not-allowed" : "cursor-pointer";
+
+            return `
+            <tr id="row-kumpul-${d.idKumpul}" class="hover:bg-indigo-50/30 transition-colors">
+                <td class="px-3 py-2 text-center border-r border-slate-100 min-w-[60px]">
+                    <input type="checkbox" style="appearance: auto; width: 16px; height: 16px;" class="cursor-pointer ${disableChk}" value="${d.idKumpul}" onchange="toggleSelectKumpul(this)" ${isChecked} ${d.idKumpul===''?'disabled':''}>
+                </td>
+                <td class="px-4 py-3 text-center border-r border-slate-100 font-medium">${globalIndex}</td>
+                <td class="px-4 py-3 border-r border-slate-100 font-mono text-xs text-slate-500">${d.nis}</td>
+                <td class="px-4 py-3 border-r border-slate-100 font-bold text-slate-800">${d.nama}</td>
+                <td class="px-4 py-3 border-r border-slate-100 text-center text-xs font-bold text-slate-500">${d.kelas}</td>
+                <td class="px-4 py-3 border-r border-slate-100 font-bold text-slate-800">${d.tugasJudul}</td>
+                <td class="px-4 py-3 border-r border-slate-100 text-[10px] text-center text-slate-400">${formatTanggalTeks(d.waktuBuat)}</td>
+                <td class="px-4 py-3 border-r border-slate-100 text-[10px] text-center font-bold ${d.waktuKumpul!=='-'?'text-indigo-600':'text-red-400'}">${formatTanggalTeks(d.waktuKumpul)}</td>
+                <td class="px-4 py-3 text-center border-r border-slate-100">${badgeStatus}</td>
+                <td class="px-4 py-3 text-center border-r border-slate-100 bg-slate-50/50">${nilaiHtml}</td>
+                <td class="px-4 py-3 text-center">
+                    <button ${disableBtn} onclick="bukaModalKoreksi('${d.id_user}')" class="bg-indigo-100 hover:bg-indigo-600 text-indigo-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm">Koreksi</button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        renderPaginationControls(data.length);
+        updateCheckAllCheckboxState();
+    }
+
+    function toggleSelectKumpul(cb) {
+        if(cb.checked) {
+            if(!zState_selectedKumpul.includes(cb.value)) zState_selectedKumpul.push(cb.value);
+        } else {
+            zState_selectedKumpul = zState_selectedKumpul.filter(id => id !== cb.value);
+        }
+        document.getElementById('lblCountBtnMassal').innerText = zState_selectedKumpul.length;
+        updateCheckAllCheckboxState();
+    }
+
+    function toggleSelectAllKumpul(cb) {
+        zState_filteredKumpul.forEach(d => {
+            if(d.idKumpul !== "") {
+                if(cb.checked) {
+                    if(!zState_selectedKumpul.includes(d.idKumpul)) zState_selectedKumpul.push(d.idKumpul);
+                } else {
+                    zState_selectedKumpul = zState_selectedKumpul.filter(id => id !== d.idKumpul);
+                }
+            }
+        });
+        document.getElementById('lblCountBtnMassal').innerText = zState_selectedKumpul.length;
+        renderTabelDetailKumpul(); 
+    }
+
+    function updateCheckAllCheckboxState() {
+        const selectAll = document.getElementById('chkSelectAllKumpul');
+        if(!selectAll) return;
+        
+        let allFilteredHaveId = zState_filteredKumpul.filter(d => d.idKumpul !== "");
+        if(allFilteredHaveId.length === 0) {
+            selectAll.checked = false;
+            return;
+        }
+        
+        let isAllSelected = allFilteredHaveId.every(d => zState_selectedKumpul.includes(d.idKumpul));
+        selectAll.checked = isAllSelected;
+    }
+
+    function renderPaginationControls(totalItems) {
+        const totalPages = Math.ceil(totalItems / zState_limitNilaiDetail);
+        const container = document.getElementById('paginationNilaiDetail');
+
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const startIndex = (zState_pageNilaiDetail - 1) * zState_limitNilaiDetail + 1;
+        const endIndex = Math.min(startIndex + zState_limitNilaiDetail - 1, totalItems);
+
+        let btnHtml = `
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between w-full">
+            <div>
+                <p class="text-sm text-slate-700">
+                    Menampilkan <span class="font-medium">${startIndex}</span> sampai <span class="font-medium">${endIndex}</span> dari <span class="font-medium">${totalItems}</span> data
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <button onclick="changePageNilaiDetail(${zState_pageNilaiDetail - 1})" ${zState_pageNilaiDetail === 1 ? 'disabled class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-slate-50 text-sm font-medium text-slate-400 cursor-not-allowed"' : 'class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 transition-colors"'}>
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+        `;
+
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === zState_pageNilaiDetail) {
+                btnHtml += `<button aria-current="page" class="z-10 bg-indigo-50 border-indigo-500 text-indigo-600 relative inline-flex items-center px-4 py-2 border text-sm font-bold shadow-inner">${i}</button>`;
+            } else {
+                btnHtml += `<button onclick="changePageNilaiDetail(${i})" class="bg-white border-slate-300 text-slate-500 hover:bg-slate-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors">${i}</button>`;
+            }
+        }
+
+        btnHtml += `
+                    <button onclick="changePageNilaiDetail(${zState_pageNilaiDetail + 1})" ${zState_pageNilaiDetail === totalPages ? 'disabled class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-slate-50 text-sm font-medium text-slate-400 cursor-not-allowed"' : 'class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 transition-colors"'}>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </nav>
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-between sm:hidden w-full">
+            <button onclick="changePageNilaiDetail(${zState_pageNilaiDetail - 1})" ${zState_pageNilaiDetail === 1 ? 'disabled class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-400 bg-slate-50 cursor-not-allowed"' : 'class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition-colors"'}>
+                Seblm
+            </button>
+            <span class="text-sm font-medium text-slate-700">Hal ${zState_pageNilaiDetail} / ${totalPages}</span>
+            <button onclick="changePageNilaiDetail(${zState_pageNilaiDetail + 1})" ${zState_pageNilaiDetail === totalPages ? 'disabled class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-400 bg-slate-50 cursor-not-allowed"' : 'class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition-colors"'}>
+                Lanjut
+            </button>
+        </div>
+        `;
+
+        container.innerHTML = btnHtml;
+    }
+
+    function changePageNilaiDetail(newPage) {
+        const totalPages = Math.ceil(zState_filteredKumpul.length / zState_limitNilaiDetail);
+        if (newPage >= 1 && newPage <= totalPages) {
+            zState_pageNilaiDetail = newPage;
+            renderTabelDetailKumpul();
+        }
+    }
+
+    function cetakNilaiTugas() {
+        if (!zState_filteredKumpul || zState_filteredKumpul.length === 0) {
+            return showToast('info', 'Tidak ada data nilai untuk dicetak.');
+        }
+
+        const tugasJudul = zState_detailKumpul.length > 0 ? zState_detailKumpul[0].tugasJudul : 'Tugas';
+        const kelas = zState_detailKumpul.length > 0 ? zState_detailKumpul[0].kelas : '-';
+        
+        let htmlContent = `
+            <!DOCTYPE html>
+            <html lang="id">
+            <head>
+                <meta charset="UTF-8">
+                <title>Cetak Nilai - ${tugasJudul}</title>
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #333; }
+                    h2 { text-align: center; margin-bottom: 5px; font-size: 24px; text-transform: uppercase; }
+                    p { text-align: center; margin-top: 0; margin-bottom: 25px; color: #666; font-size: 14px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                    th { background-color: #f8fafc; font-weight: bold; text-transform: uppercase; }
+                    .text-center { text-align: center; }
+                    .font-bold { font-weight: bold; }
+                    @media print {
+                        @page { margin: 1cm; }
+                        body { padding: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                <h2>Laporan Nilai Tugas: ${tugasJudul}</h2>
+                <p>Kelas: <b>${kelas}</b></p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="text-center" width="5%">No</th>
+                            <th width="15%">NIS</th>
+                            <th width="30%">Nama Siswa</th>
+                            <th width="10%" class="text-center">Kelas</th>
+                            <th width="15%" class="text-center">Waktu Kumpul</th>
+                            <th width="15%" class="text-center">Status</th>
+                            <th width="10%" class="text-center">Nilai</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        zState_filteredKumpul.forEach((d, i) => {
+            htmlContent += `
+                <tr>
+                    <td class="text-center">${i + 1}</td>
+                    <td>${d.nis}</td>
+                    <td>${d.nama}</td>
+                    <td class="text-center">${d.kelas}</td>
+                    <td class="text-center">${formatTanggalCetak(d.waktuKumpul)}</td>
+                    <td class="text-center">${d.status}</td>
+                    <td class="text-center font-bold">${d.nilai !== "" ? d.nilai : '-'}</td>
+                </tr>
+            `;
+        });
+
+        htmlContent += `
+                    </tbody>
+                </table>
+                <script>
+                    window.onload = function() {
+                        setTimeout(function() {
+                            window.print();
+                            window.close();
+                        }, 500);
+                    }
+                <\/script>
+            </body>
+            </html>
+        `;
+
+        const printWindow = window.open('', '_blank');
+        if(printWindow) {
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+        } else {
+            showToast('warning', 'Pop-up diblokir oleh browser. Izinkan pop-up untuk mencetak.');
+        }
+    }
+
+    function getDriveDirectUrl(url) {
+        if (!url) return '';
+        let fileId = '';
+        if (url.includes('/file/d/')) {
+            const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) fileId = match[1];
+        } else if (url.includes('id=')) {
+            const match = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) fileId = match[1];
+        }
+        if (fileId) {
+            return `https://drive.google.com/uc?export=download&id=${fileId}`;
+        }
+        return url;
+    }
+
+    function convertToDrivePreviewUrl(url) {
+        if (!url) return '';
+        if (url.includes('drive.google.com/file/d/')) {
+            return url.replace(/\/view.*$/, '/preview');
+        }
+        return url;
+    }
+
+    function perbesarFotoGlobal(imgSrc) {
+        if(imgSrc && !imgSrc.endsWith('index.html') && imgSrc !== window.location.href) {
+            Swal.fire({
+                imageUrl: imgSrc,
+                imageAlt: 'Foto Jawaban',
+                width: 'auto',
+                padding: '1em',
+                showConfirmButton: false,
+                showCloseButton: true,
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdrop: `rgba(15, 23, 42, 0.85)`,
+                customClass: {
+                    image: 'rounded-xl max-h-[85vh] object-contain shadow-2xl border border-slate-200'
+                }
+            });
+        }
+    }
+
+    function perbesarFotoKoreksi() {
+        const imgSrc = document.getElementById('koreksiDataFoto').src;
+        perbesarFotoGlobal(imgSrc);
+    }
+
+    function bukaModalKoreksi(id_user) {
+        const d = zState_detailKumpul.find(x => x.id_user === id_user);
+        if(!d) return;
+
+        document.getElementById('koreksiNamaSiswa').innerText = d.nama;
+        document.getElementById('koreksiNisSiswa').innerText = d.nis;
+        document.getElementById('koreksiKelasSiswa').innerText = d.kelas;
+        document.getElementById('inpKoreksiIdKumpul').value = d.idKumpul;
+        document.getElementById('inpNilaiAngka').value = d.nilai;
+        document.getElementById('inpCatatanGuru').value = d.catatan;
+
+        const cTeks = document.getElementById('koreksiTeksContainer');
+        const cFoto = document.getElementById('koreksiFotoContainer');
+        const cVideo = document.getElementById('koreksiVideoContainer');
+        const cFile = document.getElementById('koreksiFileContainer');
+        
+        if(d.jawabanTeks) { cTeks.classList.remove('hidden'); document.getElementById('koreksiDataTeks').innerText = d.jawabanTeks; } else cTeks.classList.add('hidden');
+        if(d.jawabanFoto) { cFoto.classList.remove('hidden'); document.getElementById('koreksiDataFoto').src = d.jawabanFoto; } else cFoto.classList.add('hidden');
+        
+        if(d.jawabanVideo && (d.jawabanVideo.includes('http') || d.jawabanVideo.includes('drive'))) { 
+            cVideo.classList.remove('hidden'); 
+            document.getElementById('koreksiDataVideo').src = convertToDrivePreviewUrl(d.jawabanVideo); 
+            document.getElementById('koreksiLinkVideo').href = d.jawabanVideo;
+        } else { 
+            cVideo.classList.add('hidden'); 
+            document.getElementById('koreksiDataVideo').src = ''; 
+            document.getElementById('koreksiLinkVideo').href = '#';
+        }
+
+        if(d.jawabanFile && (d.jawabanFile.includes('http') || d.jawabanFile.includes('drive'))) { 
+            cFile.classList.remove('hidden'); 
+            document.getElementById('koreksiDataFile').src = convertToDrivePreviewUrl(d.jawabanFile); 
+            document.getElementById('koreksiLinkFile').href = d.jawabanFile;
+        } else { 
+            cFile.classList.add('hidden'); 
+            document.getElementById('koreksiDataFile').src = ''; 
+            document.getElementById('koreksiLinkFile').href = '#';
+        }
+
+        document.getElementById('modalKoreksiTugas').classList.remove('hidden');
+    }
+
+    function closeModalKoreksi() { 
+        document.getElementById('modalKoreksiTugas').classList.add('hidden'); 
+        document.getElementById('koreksiDataVideo').src = '';
+        document.getElementById('koreksiDataFile').src = '';
+    }
+
+    function submitSimpanNilai(e) {
+        e.preventDefault();
+        const payload = {
+            idKumpul: document.getElementById('inpKoreksiIdKumpul').value,
+            nilai: document.getElementById('inpNilaiAngka').value,
+            catatan: document.getElementById('inpCatatanGuru').value
+        };
+
+        setBtnLoading('btnSimpanNilai', true, 'Menyimpan...');
+        google.script.run.withSuccessHandler(res => {
+            setBtnLoading('btnSimpanNilai', false, 'Simpan Nilai');
+            if(res.status === 'success') {
+                closeModalKoreksi();
+                showToast('success', 'Nilai berhasil disimpan.');
+                
+                let d = zState_detailKumpul.find(x => x.idKumpul === payload.idKumpul);
+                if(d) { d.nilai = payload.nilai; d.catatan = payload.catatan; }
+                
+                // Partial DOM render of specific column in specific row
+                const rowEl = document.getElementById(`row-kumpul-${payload.idKumpul}`);
+                if (rowEl) {
+                    filterDetailNilaiTugas();
+                }
+                
+                // Sinkronkan cache global Nilai
+                zCache_tugasNilaiLoaded = false;
+                prefetchModulData();
+            } else {
+                showToast('error', res.message);
+            }
+        }).simpanNilaiTugas(payload);
+    }
+
+    function bukaModalKoreksiMassal() {
+        if(zState_selectedKumpul.length === 0) {
+            return showToast('warning', 'Pilih minimal 1 siswa dengan mencentang kotak di tabel untuk dikoreksi.');
+        }
+        document.getElementById('lblCountMassal').innerText = zState_selectedKumpul.length;
+        
+        let htmlJawaban = '';
+        zState_selectedKumpul.forEach(idKumpul => {
+            const d = zState_detailKumpul.find(x => x.idKumpul === idKumpul);
+            if(d) {
+                htmlJawaban += `
+                <div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden flex flex-col">
+                    <div class="bg-slate-50 border-b border-slate-100 px-4 py-3 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-slate-800 text-sm leading-tight">${d.nama}</p>
+                            <p class="text-[10px] text-slate-500 font-medium">NIS: ${d.nis} • Kelas: ${d.kelas}</p>
+                        </div>
+                        <span class="bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg text-xs font-black border border-indigo-100 shadow-sm">Nilai Awal: ${d.nilai || '-'}</span>
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col">
+                        <div class="space-y-4 flex-1">
+                `;
+                
+                let adaJawaban = false;
+
+                if(d.jawabanTeks) {
+                    adaJawaban = true;
+                    htmlJawaban += `
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Teks Jawaban:</p>
+                            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-700 whitespace-pre-wrap max-h-32 overflow-y-auto custom-scrollbar">${d.jawabanTeks}</div>
+                        </div>
+                    `;
+                }
+
+                if(d.jawabanFoto) {
+                    adaJawaban = true;
+                    htmlJawaban += `
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Foto Jawaban:</p>
+                            <img src="${d.jawabanFoto}" onclick="perbesarFotoGlobal('${d.jawabanFoto}')" class="max-w-[150px] max-h-[150px] object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-80 transition-all shadow-sm" title="Klik untuk perbesar">
+                        </div>
+                    `;
+                }
+
+                if(d.jawabanVideo && (d.jawabanVideo.includes('http') || d.jawabanVideo.includes('drive'))) {
+                    adaJawaban = true;
+                    htmlJawaban += `
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Video Jawaban:</p>
+                                <a href="${d.jawabanVideo}" target="_blank" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 hover:bg-blue-100 transition-colors"><i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Beda Tab</a>
+                            </div>
+                            <iframe src="${convertToDrivePreviewUrl(d.jawabanVideo)}" class="w-full h-40 rounded-lg border border-slate-200 bg-slate-50" allowfullscreen></iframe>
+                        </div>
+                    `;
+                }
+
+                if(d.jawabanFile && (d.jawabanFile.includes('http') || d.jawabanFile.includes('drive'))) {
+                    adaJawaban = true;
+                    htmlJawaban += `
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Dokumen/File:</p>
+                                <a href="${d.jawabanFile}" target="_blank" class="text-[9px] font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded border border-rose-100 hover:bg-rose-100 transition-colors"><i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Beda Tab</a>
+                            </div>
+                            <iframe src="${convertToDrivePreviewUrl(d.jawabanFile)}" class="w-full h-40 rounded-lg border border-slate-200 bg-slate-50" allowfullscreen></iframe>
+                        </div>
+                    `;
+                }
+
+                if(!adaJawaban) {
+                    htmlJawaban += `<div class="text-center py-6 text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-dashed border-slate-200 flex flex-col items-center gap-2"><i class="fa-solid fa-folder-open text-2xl text-slate-300"></i> Tidak ada bukti pengerjaan yang terlampir.</div>`;
+                }
+
+                htmlJawaban += `
+                        </div>
+                        <!-- KOTAK INPUT NILAI INDIVIDUAL -->
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-emerald-50/30 p-3 rounded-xl border border-emerald-100">
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs font-bold text-emerald-800 whitespace-nowrap"><i class="fa-solid fa-pen-nib mr-1"></i> Beri Nilai:</label>
+                                <input type="number" id="massal_nilai_${d.idKumpul}" value="${d.nilai}" class="w-20 px-2 py-1.5 rounded-lg border border-emerald-200 focus:ring-2 focus:ring-emerald-500 font-bold text-emerald-700 text-center text-sm shadow-inner" min="0" max="100" placeholder="0">
+                            </div>
+                            <div class="flex-1 w-full">
+                                <input type="text" id="massal_catatan_${d.idKumpul}" value="${d.catatan || ''}" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-xs shadow-inner text-slate-700" placeholder="Catatan/feedback (opsional)...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }
+        });
+
+        document.getElementById('containerJawabanMassal').innerHTML = htmlJawaban;
+        document.getElementById('modalKoreksiMassal').classList.remove('hidden');
+    }
+
+    function closeModalKoreksiMassal() {
+        document.getElementById('modalKoreksiMassal').classList.add('hidden');
+        document.getElementById('containerJawabanMassal').innerHTML = ''; 
+    }
+
+    async function submitSimpanNilaiMassal(e) {
+        e.preventDefault();
+
+        setBtnLoading('btnSimpanNilaiMassal', true, 'Menyimpan...');
+
+        let successCount = 0;
+        let failCount = 0;
+        let lastError = '';
+
+        const chunkSize = 5;
+        for (let i = 0; i < zState_selectedKumpul.length; i += chunkSize) {
+            const chunk = zState_selectedKumpul.slice(i, i + chunkSize);
+            const promises = chunk.map(idK => {
+                return new Promise((resolve) => {
+                    const elNilai = document.getElementById('massal_nilai_' + idK);
+                    const elCatatan = document.getElementById('massal_catatan_' + idK);
+                    
+                    const nilaiVal = elNilai ? elNilai.value : '';
+                    const catatanVal = elCatatan ? elCatatan.value : '';
+
+                    const singlePayload = { idKumpul: idK, nilai: nilaiVal, catatan: catatanVal };
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            if(res.status === 'success') {
+                                let d = zState_detailKumpul.find(x => x.idKumpul === idK);
+                                if(d) { d.nilai = nilaiVal; d.catatan = catatanVal; }
+                                resolve({success: true});
+                            } else {
+                                resolve({success: false, msg: res.message});
+                            }
+                        })
+                        .withFailureHandler(err => resolve({success: false, msg: err.message}))
+                        .simpanNilaiTugas(singlePayload); 
+                });
+            });
+
+            const results = await Promise.all(promises);
+            results.forEach(r => {
+                if(r.success) successCount++;
+                else { failCount++; lastError = r.msg; }
+            });
+        }
+
+        setBtnLoading('btnSimpanNilaiMassal', false, 'Simpan Semua Nilai');
+
+        if (successCount > 0) {
+            closeModalKoreksiMassal();
+            showToast('success', failCount > 0 ? `Berhasil menyimpan ${successCount} siswa, Gagal ${failCount}.` : 'Semua nilai berhasil disimpan!');
+            
+            zState_selectedKumpul = []; 
+            document.getElementById('lblCountBtnMassal').innerText = '0';
+            if(document.getElementById('chkSelectAllKumpul')) document.getElementById('chkSelectAllKumpul').checked = false;
+            
+            filterDetailNilaiTugas(); 
+            
+            // Perbarui cache Nilai
+            zCache_tugasNilaiLoaded = false;
+            prefetchModulData();
+        } else {
+            showToast('error', lastError || 'Terjadi kesalahan saat menyimpan.');
+        }
+    }
+</script>
