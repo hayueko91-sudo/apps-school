@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LMS Terpadu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- TAMBAHAN LIBRARI CROPPER.JS UNTUK CROP FOTO -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+    <!-- TAMBAHAN LIBRARI CHART.JS UNTUK GRAFIK KUNJUNGAN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        
+        .desktop-menu-item.active { background-color: #e0e7ff; color: #4f46e5; font-weight: 600; }
+        .desktop-submenu-item.active { color: #4f46e5; font-weight: 600; background-color: #eef2ff; }
+        .mobile-nav-item.active { color: #4f46e5; }
+        .mobile-nav-item.active i { transform: scale(1.1); transition: transform 0.2s; }
+
+        .animate-fade { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        @keyframes float-medium {
+            0%, 100% { transform: translateY(0) translateX(0) scale(1); }
+            50% { transform: translateY(-15px) translateX(15px) scale(1.05); }
+        }
+        @keyframes float-fast {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(-5deg); }
+        }
+        .anim-float-slow { animation: float-slow 8s ease-in-out infinite; }
+        .anim-float-medium { animation: float-medium 6s ease-in-out infinite; }
+        .anim-float-fast { animation: float-fast 4s ease-in-out infinite; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .loader-spin { border: 3px solid #f3f3f3; border-top: 3px solid white; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #landingPengumumanArea img {
+            object-fit: cover !important;
+            width: 100%;
+            height: 100% !important;
+            aspect-ratio: 16 / 9;
+            max-height: 240px;
+            border-radius: 0.75rem;
+            object-position: center;
+        }
+
+        @media (min-width: 768px) {
+            #landingPengumumanArea img { max-height: 350px; }
+            #landingPengumumanArea .line-clamp-2,
+            #landingPengumumanArea .line-clamp-3,
+            #landingPengumumanArea p:not(.text-xs):not(.font-bold) { max-height: 90px; }
+        }
+
+        #landingPengumumanArea .line-clamp-2,
+        #landingPengumumanArea .line-clamp-3,
+        #landingPengumumanArea p:not(.text-xs):not(.font-bold) {
+            display: block !important;
+            -webkit-line-clamp: unset !important;
+            overflow-y: auto !important;
+            max-height: 80px;
+            padding-right: 6px;
+        }
+        
+        #landingPengumumanArea .line-clamp-2::-webkit-scrollbar,
+        #landingPengumumanArea .line-clamp-3::-webkit-scrollbar,
+        #landingPengumumanArea p:not(.text-xs):not(.font-bold)::-webkit-scrollbar { width: 10px; }
+        #landingPengumumanArea .line-clamp-2::-webkit-scrollbar-thumb,
+        #landingPengumumanArea .line-clamp-3::-webkit-scrollbar-thumb,
+        #landingPengumumanArea p:not(.text-xs):not(.font-bold)::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 15px; }
+
+        @media print {
+            body { background-color: white !important; }
+            aside, header, nav, #mobileBottomNav, #mobileMoreMenu, .print-hide, .btn-print-hide { display: none !important; }
+            main { padding: 0 !important; margin: 0 !important; overflow: visible !important; width: 100% !important; }
+            #mainApp { display: block !important; height: auto !important; }
+            #mainApp.flex-col { flex-direction: row !important; }
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 h-screen flex overflow-hidden">
+    <div id="landingPage" class="w-full h-full overflow-x-hidden overflow-y-auto md:overflow-y-hidden bg-slate-50 relative"></div>
+    <div id="loginScreen" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-all duration-300"></div>
+
+    <div id="readPengumumanModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-all duration-300 opacity-0 p-4 print-hide">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform scale-95 transition-transform duration-300" id="readPengumumanContent">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><i class="fa-solid fa-bullhorn text-indigo-600"></i> Detail Pengumuman</h3>
+                <button onclick="closeReadPengumumanModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                <img id="readPengumumanGambar" src="" class="w-full h-full object-cover bg-slate-50 rounded-xl mb-6 hidden border border-slate-100 shadow-sm" style="aspect-ratio: 16/9; max-height: 400px;">
+                <h2 id="readPengumumanJudul" class="text-2xl font-bold text-slate-800 mb-2 leading-tight">Judul Pengumuman</h2>
+                <div class="flex items-center gap-2 mb-6">
+                    <span class="text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100"><i class="fa-regular fa-calendar mr-1"></i> <span id="readPengumumanTanggal">Tanggal</span></span>
+                </div>
+                <div id="readPengumumanIsi" class="text-slate-600 text-sm md:text-base whitespace-pre-wrap leading-relaxed">Isi pengumuman...</div>
+            </div>
+            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex justify-end shrink-0">
+                <button onclick="closeReadPengumumanModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-indigo-200">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP PROFIL -->
+    <div id="profileModal" class="hidden fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-all duration-300 opacity-0 p-4 print-hide">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col transform scale-95 transition-transform duration-300 overflow-hidden" id="profileModalContent">
+            
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0 bg-slate-50">
+                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><i class="fa-solid fa-user-gear text-indigo-600"></i> Pengaturan Profil</h3>
+                <button onclick="closeProfileModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors border border-slate-200 shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <form id="formUpdateProfil" onsubmit="submitUpdateProfil(event); return false;" class="flex flex-col flex-1 overflow-hidden">
+                <div class="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
+                    <div class="flex flex-col md:flex-row gap-6 items-center md:items-start mb-8">
+                        <!-- Photo Section -->
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="relative group">
+                                <div class="w-32 h-32 rounded-full border-4 border-slate-50 bg-slate-100 shadow-md overflow-hidden flex items-center justify-center">
+                                    <img id="profilCurrentPhoto" src="" class="w-full h-full object-cover hidden" alt="Foto Profil">
+                                    <i id="profilDefaultIcon" class="fa-solid fa-user text-5xl text-slate-400"></i>
+                                </div>
+                                <label for="profilInpFoto" class="absolute bottom-0 right-0 w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-indigo-700 transition-colors border-2 border-white">
+                                    <i class="fa-solid fa-camera"></i>
+                                </label>
+                                <input type="file" id="profilInpFoto" accept="image/*" class="hidden" onchange="previewProfilFoto(event)">
+                            </div>
+                            <div class="text-xs text-slate-500 text-center max-w-[150px]">Foto akan dicrop otomatis agar jelas dan proporsional.</div>
+                        </div>
+
+                        <!-- User Info Section -->
+                        <div class="flex-1 w-full">
+                            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-4">
+                                <div class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3">Informasi Akun Saat Ini</div>
+                                
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-center"><span class="text-sm text-slate-500 font-medium">Role:</span> <span class="font-bold text-slate-800" id="profilRoleInfo">-</span></div>
+                                    <div class="flex justify-between items-center"><span class="text-sm text-slate-500 font-medium">Nama:</span> <span class="font-bold text-slate-800" id="profilNameInfo">-</span></div>
+                                    <div class="flex justify-between items-center"><span class="text-sm text-slate-500 font-medium">Username:</span> <span class="font-bold text-slate-800" id="profilUsernameInfo">-</span></div>
+                                </div>
+                                
+                                <!-- Tambahan Data Guru / Siswa yang muncul dinamis -->
+                                <div id="profilExtraInfoContainer" class="mt-3 pt-3 border-t border-indigo-200/60 hidden">
+                                    <!-- Siswa Info -->
+                                    <div id="profilExtraSiswa" class="hidden space-y-2">
+                                        <div class="flex justify-between items-center"><span class="text-sm text-slate-500 font-medium">NIS:</span> <span class="font-bold text-slate-800" id="profilNisInfo">-</span></div>
+                                        <div class="flex justify-between items-center"><span class="text-sm text-slate-500 font-medium">Kelas:</span> <span class="font-bold text-slate-800" id="profilKelasInfo">-</span></div>
+                                    </div>
+                                    <!-- Guru Info -->
+                                    <div id="profilExtraGuru" class="hidden space-y-2">
+                                        <div class="flex justify-between items-center"><span class="text-sm text-slate-500 font-medium">NIP:</span> <span class="font-bold text-slate-800" id="profilNipInfo">-</span></div>
+                                        <div class="flex justify-between items-center"><span class="text-sm text-slate-500 font-medium">Mapel:</span> <span class="font-bold text-slate-800 text-right max-w-[150px] truncate" id="profilMapelInfo">-</span></div>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <p class="text-sm text-slate-500">Anda dapat memperbarui foto profil, username, dan password Anda pada form di bawah ini.</p>
+                        </div>
+                    </div>
+
+                    <!-- Form Section -->
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Username Baru <span class="text-slate-400 font-normal">(Opsional)</span></label>
+                            <div class="relative">
+                                <i class="fa-solid fa-at absolute left-4 top-3.5 text-slate-400"></i>
+                                <input type="text" id="profilInpUsername" class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-colors focus:bg-white" placeholder="Ketik username baru jika ingin mengubahnya">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Password Baru <span class="text-slate-400 font-normal">(Opsional)</span></label>
+                            <div class="relative">
+                                <i class="fa-solid fa-lock absolute left-4 top-3.5 text-slate-400"></i>
+                                <input type="password" id="profilInpPassword" class="w-full pl-11 pr-12 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-colors focus:bg-white" placeholder="Biarkan kosong jika tidak ingin mengubah password">
+                                <button type="button" onclick="togglePasswordVisibility('profilInpPassword', 'profilEyeIcon1')" class="absolute right-4 top-3.5 text-slate-400 hover:text-indigo-600 focus:outline-none"><i id="profilEyeIcon1" class="fa-solid fa-eye"></i></button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Konfirmasi Password Baru</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-lock absolute left-4 top-3.5 text-slate-400"></i>
+                                <input type="password" id="profilInpPasswordConfirm" class="w-full pl-11 pr-12 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-colors focus:bg-white" placeholder="Ulangi password baru">
+                                <button type="button" onclick="togglePasswordVisibility('profilInpPasswordConfirm', 'profilEyeIcon2')" class="absolute right-4 top-3.5 text-slate-400 hover:text-indigo-600 focus:outline-none"><i id="profilEyeIcon2" class="fa-solid fa-eye"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 shrink-0 flex justify-end gap-3 rounded-b-3xl">
+                    <button type="button" onclick="closeProfileModal()" class="px-6 py-2.5 rounded-xl font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-sm">Batal</button>
+                    <button type="submit" id="btnSimpanProfil" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md shadow-indigo-200 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- AKHIR MODAL POPUP PROFIL -->
+
+    <!-- MODAL CROP FOTO -->
+    <div id="cropModal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-all duration-300 opacity-0 p-4 print-hide">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col transform scale-95 transition-transform duration-300 overflow-hidden" id="cropModalContent">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><i class="fa-solid fa-crop-simple text-indigo-600"></i> Sesuaikan Foto</h3>
+                <button onclick="closeCropModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors border border-slate-200 shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-4 bg-slate-200 flex items-center justify-center relative" style="height: 50vh;">
+                <!-- Menggunakan ID profilImageToCrop yang baru -->
+                <img id="profilImageToCrop" src="" class="max-w-full max-h-full block" style="margin: 0 auto;">
+            </div>
+            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 shrink-0 flex justify-end gap-3 rounded-b-3xl">
+                <button type="button" onclick="closeCropModal()" class="px-6 py-2.5 rounded-xl font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-sm">Batal</button>
+                <button type="button" onclick="applyCrop()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md shadow-indigo-200 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-check"></i> Potong & Terapkan
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- AKHIR MODAL CROP FOTO -->
+
+    <div id="mainApp" class="w-full h-full hidden bg-slate-50 flex-col lg:flex-row">
+        <!-- Header sekarang disembunyikan hanya pada lg (desktop) -->
+        <header class="lg:hidden bg-white border-b border-slate-200 px-5 py-3 flex justify-between items-center z-10 shrink-0 shadow-sm print-hide">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center shadow-md shadow-indigo-200 overflow-hidden" id="mobileLogoContainer">
+                    <img id="mobileAppLogo" src="" class="hidden w-full h-full object-cover">
+                    <i id="mobileAppIcon" class="fa-solid fa-graduation-cap text-white text-sm"></i>
+                </div>
+                <div class="flex flex-col">
+                    <h2 class="text-xl font-bold text-slate-800 leading-none" id="mobileAppName">HaKoSa</h2>
+                    <span class="text-[10px] font-bold text-indigo-500 mt-1 hidden" id="mobileActiveTA">TA: Aktif</span>
+                </div>
+            </div>
+            <!-- Profil Icon Mobile Header Pojok Kanan Atas -->
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-bold uppercase tracking-wide bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100" id="mobileRoleBadge">Role</span>
+                <button onclick="openProfileModal()" class="w-10 h-10 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center overflow-hidden hover:border-indigo-400 transition-colors shadow-sm focus:outline-none" title="Pengaturan Profil">
+                    <img id="mobileHeaderProfileImg" src="" class="w-full h-full object-cover hidden" alt="Profil">
+                    <i id="mobileHeaderProfileIcon" class="fa-solid fa-user text-slate-500"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Sidebar sekarang hanya tampil pada lg (desktop) -->
+        <aside class="hidden lg:flex w-72 bg-white border-r border-slate-200 flex-col h-full shadow-sm z-10 shrink-0 print-hide">
+            <div class="p-6 border-b border-slate-100 flex items-center gap-4">
+                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-md overflow-hidden" id="desktopLogoContainer">
+                    <img id="sidebarAppLogo" src="" class="hidden w-full h-full object-cover">
+                    <i id="sidebarAppIcon" class="fa-solid fa-graduation-cap text-white"></i>
+                </div>
+                <div class="flex flex-col">
+                    <h2 class="text-xl font-bold text-slate-800 leading-none" id="sidebarAppName">HaKoSa</h2>
+                    <div class="flex items-center gap-2 mt-1.5">
+                        <span class="text-[10px] text-white bg-indigo-500 px-2 py-0.5 rounded-md font-semibold" id="roleBadge">Role</span>
+                        <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 hidden" id="desktopActiveTA">TA: Aktif</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 flex-1 overflow-y-auto custom-scrollbar" id="sidebarMenu"></div>
+            
+            <div class="p-4 border-t border-slate-100">
+                <!-- Profil Icon Desktop Sidebar Bottom -->
+                <div class="flex items-center justify-between mb-4 px-2 group cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-colors" onclick="openProfileModal()" title="Pengaturan Profil">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border border-slate-300 group-hover:border-indigo-400 transition-colors">
+                            <img id="desktopSidebarProfileImg" src="" class="w-full h-full object-cover hidden" alt="Profil">
+                            <i id="desktopSidebarProfileIcon" class="fa-solid fa-user text-slate-400 group-hover:text-indigo-500"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-sm text-slate-800 group-hover:text-indigo-600 transition-colors" id="userNameDisplay">Nama User</div>
+                            <div class="text-[10px] text-slate-500 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Online</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-pen-to-square text-slate-300 group-hover:text-indigo-500 transition-colors"></i>
+                </div>
+                <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all text-sm font-medium">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
+                </button>
+            </div>
+        </aside>
+
+        <!-- Area konten dengan padding bawah disesuaikan untuk tablet (lg:pb-8) -->
+        <main class="flex-1 h-full overflow-y-auto p-4 md:p-8 relative pb-24 lg:pb-8" id="contentArea"></main>
+
+        <!-- Nav Bottom sekarang disembunyikan hanya pada lg (desktop) -->
+        <nav id="mobileBottomNav" class="lg:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around items-center z-40 px-2 py-1 shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.05)] pb-safe print-hide"></nav>
+
+        <!-- Menu More Bottom Sheet sekarang disembunyikan hanya pada lg (desktop) -->
+        <div id="mobileMoreMenu" class="lg:hidden fixed inset-0 z-50 hidden print-hide">
+            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0" id="mobileMoreBackdrop" onclick="closeMobileMore()"></div>
+            <div class="absolute bottom-0 w-full bg-white rounded-t-3xl p-6 transition-transform transform translate-y-full duration-300 ease-out shadow-[0_-10px_20px_rgba(0,0,0,0.1)] max-h-[85vh] flex flex-col" id="mobileMoreSheet">
+                <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-5 shrink-0"></div>
+                <!-- Profil Icon Menu Sheet -->
+                <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 shrink-0 cursor-pointer group" onclick="closeMobileMore(); openProfileModal();" title="Pengaturan Profil">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-indigo-300 transition-all">
+                            <img id="mobileSheetProfileImg" src="" class="w-full h-full object-cover hidden" alt="Profil">
+                            <i id="mobileSheetProfileIcon" class="fa-solid fa-user text-indigo-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-lg text-slate-800 group-hover:text-indigo-600 transition-colors" id="sheetUserName">Nama User</div>
+                            <div class="text-xs text-indigo-500 font-medium">Klik untuk edit profil</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-500 transition-colors"></i>
+                </div>
+                <div id="mobileMoreContent" class="space-y-3 mb-4 overflow-y-auto custom-scrollbar flex-1"></div>
+                <button onclick="logout()" class="w-full shrink-0 bg-red-50 hover:bg-red-100 text-red-600 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-colors">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar Aplikasi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <template id="tpl-landing">
+        <div class="min-h-full md:h-full w-full flex flex-col relative overflow-x-hidden bg-gradient-to-br from-slate-50 to-indigo-100/40">
+            <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                <div class="absolute top-[5%] left-[5%] w-48 md:w-80 h-48 md:h-80 bg-indigo-400/40 rounded-full blur-3xl anim-float-slow"></div>
+                <div class="absolute bottom-[10%] right-[5%] w-40 md:w-72 h-40 md:h-72 bg-blue-400/40 rounded-full blur-3xl anim-float-medium"></div>
+                <i class="fa-solid fa-graduation-cap absolute top-[15%] right-[15%] text-indigo-400/60 text-5xl md:text-8xl anim-float-fast"></i>
+                <i class="fa-solid fa-book-open absolute bottom-[25%] left-[10%] text-blue-400/60 text-4xl md:text-7xl anim-float-slow" style="animation-delay: 2s;"></i>
+                <i class="fa-solid fa-atom absolute top-[40%] left-[20%] text-indigo-400/50 text-6xl md:text-9xl anim-float-medium" style="animation-delay: 1s;"></i>
+                <i class="fa-solid fa-lightbulb absolute bottom-[40%] right-[25%] text-yellow-400/50 text-5xl md:text-7xl anim-float-fast" style="animation-delay: 3s;"></i>
+            </div>
+            <nav class="absolute w-full z-40 top-0 bg-white/40 backdrop-blur-md border-b border-white/50 transition-all shadow-sm">
+                <div class="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div id="landingLogoContainer" class="w-8 h-8 md:w-10 md:h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-md overflow-hidden">
+                            <img id="landingAppLogo" src="" class="hidden w-full h-full object-cover">
+                            <i id="landingAppIcon" class="fa-solid fa-graduation-cap text-white text-sm md:text-base"></i>
+                        </div>
+                        <h1 id="landingAppName" class="text-xl md:text-2xl font-bold text-slate-800 tracking-tight drop-shadow-sm">HaKoSa</h1>
+                    </div>
+                    <button onclick="showLoginModal()" class="flex items-center justify-center w-9 h-9 md:w-11 md:h-11 rounded-full bg-white/60 backdrop-blur-md hover:bg-indigo-100 border border-white/80 text-slate-600 hover:text-indigo-600 transition-all shadow-sm focus:ring-2 focus:ring-indigo-500">
+                        <i class="fa-solid fa-right-to-bracket text-lg md:text-xl"></i>
+                    </button>
+                </div>
+            </nav>
+            <div class="pt-24 pb-4 px-4 md:pt-20 md:pb-6 w-full max-w-7xl mx-auto text-center md:text-left flex-1 flex flex-col md:flex-row items-center justify-center md:items-start z-10 relative gap-6 md:gap-12">
+                <div class="w-full md:w-1/2 animate-fade flex flex-col justify-start pt-0 md:pt-2">
+                    <h1 class="text-[25px] md:text-5xl lg:text-5xl font-extrabold text-slate-900 mb-1 md:mb-4 tracking-tight leading-tight drop-shadow-sm">
+                        Selamat Datang!!! <br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500 drop-shadow-sm">LMS - Edukasi</span>
+                    </h1>
+                </div>
+                <div class="mt-2 md:mt-0 w-full md:w-1/2 max-w-3xl mx-auto md:mx-0 animate-fade flex-1 flex flex-col justify-start min-h-0" style="animation-delay: 0.2s;">
+                    <div class="bg-white/60 backdrop-blur-xl rounded-2xl shadow-xl shadow-indigo-100/40 border border-white/60 overflow-hidden hover:shadow-2xl hover:shadow-indigo-200/50 transition-all relative flex flex-col w-full max-h-[60vh] md:max-h-[70vh] cursor-pointer group" title="Klik pengumuman untuk membaca detail" onclick="openActivePengumuman()">
+                        <div class="bg-indigo-600/80 backdrop-blur-md px-4 md:px-6 py-2.5 md:py-4 flex items-center gap-3 shrink-0">
+                            <i class="fa-solid fa-bullhorn text-white text-xs md:text-sm animate-pulse"></i>
+                            <h3 class="text-white font-bold text-sm md:text-lg tracking-wide drop-shadow-md">Pengumuman</h3>
+                        </div>
+                        <div class="w-full relative overflow-hidden bg-transparent" id="landingPengumumanArea">
+                            <div class="text-center py-12 md:py-16 flex flex-col items-center justify-center h-full">
+                                <div class="loader-spin border-slate-300 border-t-indigo-600 mx-auto"></div>
+                                <p class="text-xs md:text-sm text-slate-500 mt-3 font-medium">Memuat pengumuman terbaru...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2 text-center md:text-left flex items-center gap-1 opacity-70"><i class="fa-solid fa-hand-pointer"></i> Klik gambar/teks untuk melihat detail pengumuman</p>
+                </div>
+            </div>
+            <footer class="w-full text-center py-3 md:py-4 mt-auto border-t border-white/40 bg-white/30 backdrop-blur-md shadow-[0_-4px_10px_rgba(0,0,0,0.02)] z-10 shrink-0">
+                <p class="text-[10px] md:text-sm font-medium text-slate-600">&copy; <span id="landingYear">2026</span> <span id="footerLandingAppName">HaKoSa</span>. Hak Cipta Dilindungi.</p>
+            </footer>
+        </div>
+    </template>
+
+    <template id="tpl-login">
+        <div class="flex flex-col items-center justify-center w-full p-4 h-full">
+            <div class="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md animate-fade border border-slate-100 relative mb-8">
+                <button onclick="closeLoginModal()" class="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <div class="text-center mb-8 mt-2">
+                    <div id="loginLogoContainer" class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-200 mb-4 overflow-hidden">
+                        <img id="loginAppLogo" src="" class="hidden w-full h-full object-cover">
+                        <i id="loginAppIcon" class="fa-solid fa-graduation-cap text-3xl text-white"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-slate-800">Masuk Akun</h1>
+                </div>
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="mb-5"><label class="block text-sm font-medium text-slate-700 mb-2">Username</label><div class="relative"><i class="fa-regular fa-user absolute left-4 top-3.5 text-slate-400"></i><input type="text" id="username" class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500" placeholder="Masukkan username" required></div></div>
+                    <div class="mb-8">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-4 top-3.5 text-slate-400"></i>
+                            <input type="password" id="password" class="w-full pl-11 pr-12 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500" placeholder="••••••••" required>
+                            <button type="button" onclick="togglePassword()" class="absolute right-4 top-3.5 text-slate-400 hover:text-indigo-600 transition-colors focus:outline-none"><i id="eyeIcon" class="fa-solid fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <button type="submit" id="btnLogin" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"><span id="btnLoginText">Masuk Sekarang</span></button>
+                </form>
+            </div>
+            <div class="text-slate-400 text-sm animate-fade font-medium text-center">&copy; <span id="loginYear">2026</span> <span id="footerLoginAppName">HaKoSa</span>. Hak Cipta Dilindungi.</div>
+        </div>
+    </template>
+
+    <template id="tpl-admin-dash">
+        <div class="animate-fade">
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-6 print-hide">Dashboard Statistik</h2>
+            
+            <!-- Area Kartu Statistik Utama -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6" id="adminStatsArea">
+                <div class="col-span-full p-6 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center h-32"><div class="loader-spin border-slate-300 border-t-indigo-600"></div></div>
+            </div>
+
+            <!-- Bagian Grafik Kunjungan Web -->
+            <div class="mt-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-indigo-600"></i> Grafik Kunjungan Web Harian
+                        </h3>
+                        <p class="text-xs text-slate-500">Mendeteksi aktivitas pengunjung unik website selama seminggu terakhir.</p>
+                    </div>
+                </div>
+                <div class="w-full relative h-[300px] md:h-[400px]">
+                    <canvas id="visitorChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tpl-guru-dash">
+        <div class="animate-fade">
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-6 print-hide">Beranda Guru</h2>
+            <div class="mb-8 bg-gradient-to-r from-indigo-600 to-blue-500 rounded-3xl p-6 md:p-8 text-white shadow-lg shadow-indigo-200 relative overflow-hidden print-hide">
+                <i class="fa-solid fa-chalkboard-user absolute right-2 bottom-[-10px] md:right-10 md:bottom-[-20px] text-white opacity-10 text-7xl md:text-9xl"></i>
+                <h3 class="text-xl md:text-2xl font-bold relative z-10" id="guruWelcome">Selamat datang!</h3>
+                <p class="text-indigo-100 text-sm md:text-base mt-2 relative z-10 max-w-lg">Berikut adalah daftar jadwal mengajar Anda di hari ini. Tetap semangat menginspirasi siswa!</p>
+            </div>
+            <div class="flex items-center justify-between mb-4 print-hide">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-calendar-day text-indigo-600"></i> Jadwal Hari Ini (<span id="hariIniLabel">...</span>)</h3>
+            </div>
+            <div id="guruScheduleCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="col-span-full p-6 text-center text-slate-500 bg-white rounded-2xl border border-slate-100 shadow-sm"><div class="loader-spin border-slate-300 border-t-indigo-600"></div> Memuat jadwal hari ini...</div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tpl-admin-id">
+        <div class="animate-fade bg-white p-4 print:p-0 rounded-lg">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 print-hide">
+                <h2 class="text-2xl font-bold text-slate-800">Cetak Kartu Akun</h2>
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="flex items-center gap-2 px-2"><i class="fa-solid fa-filter text-slate-400"></i><span class="text-sm font-bold text-slate-600">Filter:</span></div>
+                    <select id="filterKelasIdCard" onchange="renderIdCards(this.value)" class="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none flex-1 md:w-48 transition-all hover:bg-white cursor-pointer disabled:opacity-50"><option value="">Memuat Data...</option></select>
+                    <button onclick="window.print()" class="btn-print-hide bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-bold transition-all shadow-md shadow-indigo-200 flex items-center gap-2 text-sm w-full md:w-auto justify-center"><i class="fa-solid fa-print"></i> Cetak</button>
+                </div>
+            </div>
+            <div id="idCardContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 print:grid-cols-2 print:gap-4 print:w-full">
+                <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm print-hide"><div class="loader-spin border-slate-300 border-t-indigo-600 mb-3"></div><p class="text-sm text-slate-500 font-medium">Mengambil data siswa dan akun...</p></div>
+            </div>
+        </div>
+        <style>
+            @media print { 
+                body * { visibility: hidden; }
+                #contentArea, #contentArea * { visibility: visible; }
+                #contentArea { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; margin: 0 !important; }
+                #idCardContainer { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 15px !important; width: 100% !important; padding: 0 !important; }
+                .print-card-wrapper { page-break-inside: avoid; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; break-inside: avoid; width: 100%; border: 1px solid #e2e8f0; box-shadow: none !important; }
+            }
+        </style>
+    </template>
+
+    <template id="tpl-siswa-dash">
+        <div class="animate-fade">
+            <div class="flex justify-between items-center mb-6 print-hide">
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-800">Beranda Siswa</h2>
+                <button onclick="logout()" class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-sm shadow-sm"><i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar</button>
+            </div>
+
+            <div class="mb-8 bg-gradient-to-r from-indigo-600 to-blue-500 rounded-3xl p-6 md:p-8 text-white shadow-lg shadow-indigo-200 relative overflow-hidden print-hide">
+                <i class="fa-solid fa-book-open-reader absolute right-2 bottom-[-10px] md:right-10 md:bottom-[-20px] text-white opacity-10 text-7xl md:text-9xl"></i>
+                <h3 class="text-xl md:text-2xl font-bold relative z-10">Selamat belajar, <span id="siswaWelcomeName">Siswa</span>!</h3>
+                <p class="text-indigo-100 text-sm md:text-base mt-2 relative z-10 max-w-lg">
+                    Kelas: <span id="siswaWelcomeKelas" class="font-bold tracking-wide bg-white/20 px-2 py-0.5 rounded-md text-white">...</span><br>
+                    Mari selesaikan modul dan tugas mandiri Anda hari ini untuk mencapai target pembelajaran terbaik.
+                </p>
+            </div>
+
+            <div class="mb-10">
+            <h3 class="text-xl md:text-2xl font-bold text-slate-800 mb-5 flex items-center gap-2"><i class="fa-solid fa-laptop-file text-indigo-600"></i> Ruang Belajar (LMS)</h3>
+            <div id="siswaLMSContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div class="col-span-full p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-sm"><div class="loader-spin border-slate-300 border-t-indigo-600 mb-3"></div><p class="text-slate-500 font-medium text-sm">Memuat Ruang Belajar...</p></div>
+            </div>
+        </div>
+
+        <div class="mb-10">
+            <h3 class="text-xl md:text-2xl font-bold text-slate-800 mb-5 flex items-center gap-2">
+                    <i class="fa-solid fa-book-bookmark text-amber-500"></i> Materi Ajar
+                </h3>
+                <div id="siswaMateriContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div class="col-span-full p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="loader-spin border-slate-300 border-t-amber-500 mb-3"></div>
+                        <p class="text-slate-500 font-medium text-sm">Memuat materi ajar...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl md:text-2xl font-bold text-slate-800 mb-5 flex items-center gap-2"><i class="fa-solid fa-list-check text-emerald-600"></i> Tugas Mandiri</h3>
+                <div id="siswaTugasContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div class="col-span-full p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-sm"><div class="loader-spin border-slate-300 border-t-emerald-600 mb-3"></div><p class="text-slate-500 font-medium text-sm">Menyiapkan kartu tugas mandiri...</p></div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tpl-siswa-tugas-detail">
+        <div class="animate-fade">
+            <button type="button" onclick="loadDashboard()" class="mb-5 text-slate-500 hover:text-indigo-600 font-bold text-sm flex items-center gap-2 transition-colors bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100 w-fit print-hide"><i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda</button>
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 mb-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-2 h-full bg-indigo-500"></div>
+                <div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
+                    <div><span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg mb-3 inline-block" id="detTugasMapel">Mapel</span><h2 class="text-2xl md:text-3xl font-bold text-slate-800 leading-tight mb-2" id="detTugasJudul">Judul Tugas</h2><p class="text-sm text-slate-500 font-medium flex items-center gap-2"><i class="fa-solid fa-chalkboard-user"></i> <span id="detTugasGuru">Guru</span></p></div>
+                    <div class="bg-red-50 border border-red-100 px-4 py-3 rounded-xl text-center min-w-[180px]"><div class="text-[10px] uppercase font-bold text-red-500 mb-1 tracking-wider"><i class="fa-regular fa-calendar-xmark"></i> Batas Pengumpulan</div><div class="text-sm font-bold text-red-700" id="detTugasWaktu">Waktu</div></div>
+                </div>
+                <div class="border-t border-slate-100 pt-5 mt-5"><h4 class="text-sm font-bold text-slate-800 mb-2 uppercase tracking-wide">Instruksi Tugas:</h4><p class="text-slate-600 text-sm whitespace-pre-wrap leading-relaxed" id="detTugasDeskripsi"></p><div id="detTugasFotoContainer" class="hidden mt-4"><img id="detTugasFoto" src="" class="max-w-full md:max-w-md rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"></div></div>
+            </div>
+
+            <div id="formKumpulContainer" class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 hidden print-hide">
+                <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up text-indigo-600"></i> Kumpulkan Jawaban</h3>
+                <form id="formKumpulSiswa" onsubmit="submitJawabanSiswa(event); return false;">
+                    <input type="hidden" id="inpTugasId"><input type="hidden" id="inpSiswaNis"><input type="hidden" id="inpSiswaKelas"><input type="hidden" id="inpJenisTugas">
+                    <div id="reqTugasInfo" class="text-xs font-bold text-rose-500 mb-4 bg-rose-50 p-3 rounded-xl border border-rose-100 hidden"></div>
+                    <div class="space-y-5">
+                        <div id="inpTeksContainer" class="hidden"><label class="block text-sm font-bold text-slate-700 mb-2">Jawaban Teks</label><textarea id="inpTeksJawaban" rows="5" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white transition-colors resize-none" placeholder="Ketik jawaban Anda di sini..."></textarea></div>
+                        <div id="inpFotoContainer" class="hidden"><label class="block text-sm font-bold text-slate-700 mb-2">Upload Foto</label><input type="file" id="inpFotoJawaban" accept="image/*" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-all bg-slate-50 cursor-pointer"></div>
+                        <div id="inpVideoContainer" class="hidden"><label class="block text-sm font-bold text-slate-700 mb-2">Upload Video</label><input type="file" id="inpVideoJawaban" accept="video/*" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all bg-slate-50 cursor-pointer"><p class="text-[10px] text-slate-400 mt-1">Video otomatis diunggah ke Google Drive.</p></div>
+                        <div id="inpFileContainer" class="hidden"><label class="block text-sm font-bold text-slate-700 mb-2">Upload Dokumen (PDF/Word)</label><input type="file" id="inpFileJawaban" accept=".pdf,.doc,.docx,.xls,.xlsx" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 transition-all bg-slate-50 cursor-pointer"><p class="text-[10px] text-slate-400 mt-1">File dokumen otomatis diunggah ke Google Drive.</p></div>
+                    </div>
+                    <div class="mt-8 pt-6 border-t border-slate-100 flex justify-end"><button type="submit" id="btnKumpulTugas" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"><span>Kirim Jawaban</span> <i class="fa-solid fa-paper-plane"></i></button></div>
+                </form>
+            </div>
+
+            <div id="statusKumpulContainer" class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-100"><h3 class="text-xl font-bold text-slate-800">Status Jawaban Anda</h3><div id="statBadge"></div></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div id="statKekuranganContainer" class="col-span-full hidden bg-rose-50 rounded-2xl p-5 border border-rose-200"><div id="statKekuranganTitle" class="text-xs text-rose-600 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Peringatan Sistem</div><div class="text-sm text-rose-700 font-medium" id="statKekurangan">-</div></div>
+                    <div class="bg-slate-50 rounded-2xl p-5 border border-slate-100"><div class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Terkirim Pada</div><div class="font-medium text-slate-800" id="statTglKumpul">-</div></div>
+                    <div class="bg-indigo-50/50 rounded-2xl p-5 border border-indigo-100 relative overflow-hidden"><i class="fa-solid fa-star absolute right-[-10px] bottom-[-10px] text-5xl text-indigo-500/10"></i><div class="text-xs text-indigo-500 font-bold uppercase tracking-wider mb-1">Nilai Akhir dari Guru</div><div class="text-3xl font-black text-indigo-600" id="statNilai">-</div></div>
+                    <div class="col-span-full bg-slate-50 rounded-2xl p-5 border border-slate-100"><div class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-2">Umpan Balik / Catatan Guru</div><div class="text-sm text-slate-700 whitespace-pre-wrap italic" id="statCatatan">-</div></div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tpl-kekurangan-tugas-guru">
+        <div class="w-full bg-rose-50 border border-rose-200 rounded-xl p-4 mb-4 print-hide">
+            <div class="flex items-start gap-3"><i class="fa-solid fa-triangle-exclamation text-rose-500 text-lg mt-0.5"></i><div><h4 class="text-sm font-bold text-rose-700">Tugas Belum Lengkap!</h4><p class="text-xs text-rose-600 mt-1">Siswa belum melampirkan komponen yang diwajibkan: <span id="guruWarningMissingItems" class="font-bold"></span></p></div></div>
+        </div>
+    </template>
+
+    <!-- Template Baru Khusus Untuk Halaman CBT Siswa (Dari Menu Samping) -->
+    <template id="tpl-siswa-cbt-dashboard">
+        <div class="animate-fade pb-10">
+            <div class="mb-8">
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2 flex items-center gap-2"><i class="fa-solid fa-laptop-code text-rose-600"></i> Ujian & Ulangan (CBT)</h2>
+                <p class="text-slate-500 text-sm">Daftar jadwal ujian CBT yang tersedia untuk kelas Anda saat ini.</p>
+            </div>
+            <div id="siswaCBTContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div class="col-span-full p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-sm"><div class="loader-spin border-slate-300 border-t-rose-600 mb-3"></div><p class="text-slate-500 font-medium text-sm">Memuat jadwal ujian...</p></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tpl-siswa-cbt-confirm">
+        <div class="animate-fade max-w-4xl mx-auto pb-20 lg:pb-8">
+            <button type="button" onclick="bukaMenuUjianCBTSiswa()" class="mb-5 text-slate-500 hover:text-rose-600 font-bold text-sm flex items-center gap-2 transition-colors bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100 w-fit print-hide">
+                <i class="fa-solid fa-arrow-left"></i> Kembali ke Daftar Ujian
+            </button>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden relative mb-6">
+                <div class="absolute top-0 left-0 w-2 h-full bg-rose-500"></div>
+                
+                <div class="p-6 md:p-8 border-b border-slate-50">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg inline-block uppercase tracking-wide border border-rose-100" id="confMapel">Mapel</span>
+                        <span class="text-[10px] font-bold text-rose-500 bg-rose-50 border border-rose-100 px-2 py-1 rounded-md flex items-center gap-1"><i class="fa-solid fa-shield-halved"></i> Ujian Terlindungi</span>
+                    </div>
+                    
+                    <h2 class="text-2xl md:text-3xl font-bold text-slate-800 leading-tight mb-2" id="confNamaSoal">Judul Ujian</h2>
+                    <p class="text-sm text-slate-500 font-medium flex items-center gap-2 mb-6"><i class="fa-solid fa-chalkboard-user text-slate-400"></i> Pengawas/Guru: <span id="confGuru">Guru</span></p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-rose-500 text-xl"><i class="fa-regular fa-calendar-check"></i></div>
+                            <div>
+                                <div class="text-[10px] uppercase font-bold text-slate-500 mb-0.5">Waktu Pelaksanaan</div>
+                                <div class="text-sm font-bold text-slate-800" id="confWaktu">Waktu</div>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-rose-500 text-xl"><i class="fa-solid fa-stopwatch"></i></div>
+                            <div>
+                                <div class="text-[10px] uppercase font-bold text-slate-500 mb-0.5">Durasi Pengerjaan</div>
+                                <div class="text-sm font-bold text-slate-800" id="confDurasi">Durasi</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 md:p-8 bg-slate-50/50">
+                    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8">
+                        <h4 class="text-sm font-bold text-amber-800 mb-2 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg"></i> Perhatian: Sistem Anti-Kecurangan Aktif</h4>
+                        <ul class="text-sm text-amber-700 space-y-1.5 ml-4 md:ml-6 list-disc marker:text-amber-400">
+                            <li>Ujian ini akan otomatis mengubah tampilan layar Anda menjadi <b>layar penuh (Fullscreen)</b>.</li>
+                            <li>Dilarang <b>berpindah tab, meminimalkan browser, atau membuka aplikasi lain</b> selama ujian berlangsung.</li>
+                            <li>Segala aktivitas mencurigakan akan dicatat oleh sistem dan dapat berakibat pada pembatalan nilai ujian Anda.</li>
+                            <li>Pastikan koneksi internet Anda stabil sebelum memasukkan token.</li>
+                        </ul>
+                    </div>
+
+                    <form onsubmit="validasiDanMulaiCBT(event); return false;" class="max-w-sm mx-auto">
+                        <label class="block text-center text-sm font-bold text-slate-700 mb-3">Masukkan Token Ujian</label>
+                        <div class="relative mb-5">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fa-solid fa-key text-slate-400"></i>
+                            </div>
+                            <input type="text" id="inpTokenCBT" class="block w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl text-center text-lg font-bold tracking-widest text-slate-800 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 uppercase transition-all shadow-inner" placeholder="TOKEN" required autocomplete="off">
+                        </div>
+                        
+                        <button type="submit" id="btnMulaiCBT" class="w-full bg-rose-600 hover:bg-rose-700 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-rose-200 transition-all flex items-center justify-center gap-2 group">
+                            <span id="btnMulaiCBTText">Mulai Ujian Sekarang</span> <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tpl-siswa-cbt-exam">
+        <div class="animate-fade flex flex-col h-screen fixed inset-0 z-[100] bg-slate-50">
+            <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 md:py-4 flex flex-col md:flex-row justify-between items-center shrink-0 shadow-sm gap-3">
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center shadow-inner shrink-0"><i class="fa-solid fa-file-signature text-xl"></i></div>
+                    <div class="min-w-0 flex-1">
+                        <h2 class="text-base md:text-lg font-bold text-slate-800 leading-tight truncate" id="examHeaderTitle">Ujian CBT</h2>
+                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate" id="examHeaderSiswa">Nama Siswa</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
+                    <div class="bg-rose-50 border border-rose-200 px-3 md:px-4 py-1.5 md:py-2 rounded-xl flex items-center gap-2 flex-1 md:flex-none justify-center">
+                        <i class="fa-solid fa-stopwatch text-rose-500 text-base md:text-lg animate-pulse"></i>
+                        <span class="text-base md:text-lg font-black text-rose-700 tracking-wider" id="examTimerDisplay">00:00:00</span>
+                    </div>
+                    <button onclick="akhiriUjianCBT()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 md:px-5 py-2 md:py-2.5 rounded-xl font-bold shadow-md shadow-emerald-200 transition-all text-xs md:text-sm flex items-center justify-center gap-2 shrink-0">
+                        <i class="fa-solid fa-check-double"></i> Selesai
+                    </button>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center custom-scrollbar">
+                <div class="w-full max-w-4xl">
+                    <div class="bg-white rounded-3xl p-5 md:p-8 border border-slate-200 shadow-sm mb-6">
+                        <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
+                            <span class="text-sm font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">Soal No. <span id="examNoSoal" class="text-rose-600">1</span></span>
+                            <span class="text-[10px] md:text-xs font-bold text-slate-400 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md"><i class="fa-solid fa-circle-info mr-1"></i> Pilihan Ganda</span>
+                        </div>
+                        
+                        <div id="examPertanyaan" class="text-base md:text-lg text-slate-800 mb-8 leading-relaxed font-medium">
+                            <div class="text-center py-10 text-slate-400">
+                                <i class="fa-solid fa-laptop-code text-4xl mb-3"></i>
+                                <p>Modul pelaksanaan soal and timer sedang dimuat...<br>Anda saat ini berada pada mode ujian dengan sistem anti-kecurangan aktif.</p>
+                            </div>
+                        </div>
+
+                        <div id="examOpsiContainer" class="space-y-3 pointer-events-none opacity-50">
+                            <div class="flex items-center gap-3 p-4 border border-slate-200 rounded-xl">
+                                <div class="w-8 h-8 rounded-lg bg-slate-100 font-bold flex items-center justify-center text-slate-600 border border-slate-200">A</div>
+                                <div class="text-slate-700 font-medium">Opsi Jawaban A</div>
+                            </div>
+                            <div class="flex items-center gap-3 p-4 border border-slate-200 rounded-xl">
+                                <div class="w-8 h-8 rounded-lg bg-slate-100 font-bold flex items-center justify-center text-slate-600 border border-slate-200">B</div>
+                                <div class="text-slate-700 font-medium">Opsi Jawaban B</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <button class="bg-white border border-slate-200 text-slate-400 px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold flex items-center gap-2 cursor-not-allowed text-sm"><i class="fa-solid fa-arrow-left"></i> Sebelumnya</button>
+                        <button class="bg-white border border-slate-200 text-slate-400 px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold flex items-center gap-2 shadow-sm cursor-not-allowed text-sm">Selanjutnya <i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+            </main>
+
+            <footer class="bg-white border-t border-slate-200 px-4 md:px-6 py-2 md:py-3 shrink-0 flex flex-col md:flex-row items-center justify-between text-[10px] md:text-xs font-medium text-slate-400 gap-1 md:gap-0">
+                <div><i class="fa-solid fa-shield-halved text-rose-400"></i> Sistem Ujian Terpadu (Anti-Kecurangan Aktif)</div>
+                <div>Pastikan Anda menjawab semua soal sebelum waktu habis.</div>
+            </footer>
+        </div>
+    </template>
+
+    <!-- Template Pengganti jika Profil dipanggil via menu load page -->
+    <template id="tpl-user-profil">
+        <div class="animate-fade flex flex-col items-center justify-center h-full min-h-[50vh]">
+            <i class="fa-solid fa-user-gear text-6xl text-indigo-200 mb-4"></i>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Pengaturan Profil</h2>
+            <p class="text-slate-500 mb-6">Pengaturan profil sekarang dapat diakses melalui pop-up khusus.</p>
+            <button onclick="openProfileModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-md">Buka Pop-up Profil</button>
+        </div>
+    </template>
+    
+    <template id="tpl-soon">
+        <div class="animate-fade h-full min-h-[60vh] flex flex-col items-center justify-center text-center p-6"><div class="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-6 shadow-inner"><i class="fa-solid fa-person-digging text-4xl text-indigo-500"></i></div><h2 class="text-2xl font-bold text-slate-800 mb-2">Modul Sedang Dibangun</h2><p class="text-slate-500 max-w-md">Fitur ini sedang dalam tahap pengembangan. Silakan cek kembali di update versi berikutnya.</p></div>
+    </template>
+
+    <script>
+        window.openActivePengumuman = function() {
+            let data = window.landingPengumumanData || window.pengumumanData || window.currentPengumumanData || window.dataPengumumanLanding || [];
+            let slideIndex = typeof window.currentSlide !== 'undefined' ? window.currentSlide : (window.currentSlideIndex || 0);
+            if (data && data.length > 0 && data[slideIndex]) { let item = data[slideIndex]; openReadPengumumanModal(item.judul, item.isi, item.gambar, item.tanggal); return; } 
+            let area = document.getElementById('landingPengumumanArea'); if(!area) return;
+            let track = area.querySelector('#sliderTrack') || area.firstElementChild; if(!track) return;
+            let slides = Array.from(track.children).filter(c => c.tagName === 'DIV' && (!c.id || !c.id.includes('dots')));
+            let activeSlide = slides.length > 0 ? (slides[slideIndex] || slides[0]) : track;
+            let imgEl = activeSlide.querySelector('img'); let gambar = imgEl && !imgEl.src.includes('spinner') ? imgEl.src : '';
+            let titleEl = activeSlide.querySelector('h2, h3, h4, .font-bold.text-lg, .font-bold.text-xl, div.font-bold'); let judul = titleEl ? titleEl.innerText.trim() : 'Pengumuman';
+            let isiEl = activeSlide.querySelector('.line-clamp-2, .line-clamp-3, p:not(.text-xs):not(.font-bold)'); let isi = isiEl ? isiEl.innerText.trim() : 'Silakan masuk ke sistem untuk melihat detail pengumuman.';
+            let dateEls = Array.from(activeSlide.querySelectorAll('span, div, p')).filter(el => el.className.includes('text-[10px]') || el.className.includes('text-xs') || el.className.includes('rounded-full') );
+            let tanggal = '-'; if(dateEls.length > 0) { let validDates = dateEls.filter(el => el.innerText.trim().length > 3 && el.innerText.trim().length < 25); if(validDates.length > 0) tanggal = validDates[0].innerText.trim(); }
+            openReadPengumumanModal(judul, isi, gambar, tanggal);
+        };
+
+        window.openReadPengumumanModal = function(judul, isi, gambar, tanggal) {
+            const modal = document.getElementById('readPengumumanModal'); const content = document.getElementById('readPengumumanContent');
+            document.getElementById('readPengumumanJudul').innerText = judul || 'Pengumuman'; document.getElementById('readPengumumanIsi').innerText = isi || ''; document.getElementById('readPengumumanTanggal').innerText = tanggal || '-';
+            const imgEl = document.getElementById('readPengumumanGambar');
+            if (gambar && gambar.trim() !== '') { imgEl.src = gambar; imgEl.classList.remove('hidden'); } else { imgEl.src = ''; imgEl.classList.add('hidden'); }
+            modal.classList.remove('hidden'); void modal.offsetWidth; modal.classList.remove('opacity-0'); content.classList.remove('scale-95');
+        };
+
+        window.closeReadPengumumanModal = function() {
+            const modal = document.getElementById('readPengumumanModal'); const content = document.getElementById('readPengumumanContent');
+            modal.classList.add('opacity-0'); content.classList.add('scale-95'); setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        };
+
+        // --- VARIABEL GLOBAL UNTUK CROPPER ---
+        let cropperInstance = null;
+        let croppedImageBase64 = null;
+
+        // --- SCRIPT PROFIL BARU (DENGAN PENCOCOKAN DATA DOM & STORAGE) ---
+        window.openProfileModal = function() {
+            const modal = document.getElementById('profileModal');
+            const content = document.getElementById('profileModalContent');
+            modal.classList.remove('hidden');
+            void modal.offsetWidth; 
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+
+            window.loadProfilData();
+        };
+
+        window.closeProfileModal = function() {
+            const modal = document.getElementById('profileModal');
+            const content = document.getElementById('profileModalContent');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => { 
+                modal.classList.add('hidden'); 
+                croppedImageBase64 = null; // Reset crop buffer
+            }, 300);
+        };
+
+        window.loadProfilData = function() {
+            document.getElementById('profilRoleInfo').innerText = 'Memuat...';
+            document.getElementById('profilNameInfo').innerText = 'Memuat...';
+            document.getElementById('profilUsernameInfo').innerText = 'Memuat...';
+            
+            document.getElementById('profilExtraInfoContainer').classList.add('hidden');
+            document.getElementById('profilExtraSiswa').classList.add('hidden');
+            document.getElementById('profilExtraGuru').classList.add('hidden');
+
+            // Ambil Nama/ID yang sedang aktif di UI agar Backend bisa mencari baris yang tepat
+            let currentName = "";
+            if (document.getElementById('userNameDisplay')) currentName = document.getElementById('userNameDisplay').innerText;
+            if (currentName === 'Nama User' || currentName.trim() === '') {
+                if (document.getElementById('sheetUserName')) currentName = document.getElementById('sheetUserName').innerText;
+            }
+            
+            // Ambil identifier browser local storage
+            let sessionId = '';
+            try { 
+                sessionId = localStorage.getItem('id_user') || sessionStorage.getItem('id_user') || localStorage.getItem('username') || ''; 
+            } catch(e) {}
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(res) {
+                        if (res && res.status === 'success') {
+                            document.getElementById('profilRoleInfo').innerText = res.role ? res.role.toUpperCase() : '-';
+                            document.getElementById('profilNameInfo').innerText = res.nama || '-';
+                            document.getElementById('profilUsernameInfo').innerText = res.username || '-';
+                            document.getElementById('profilInpUsername').value = res.username || '';
+                            
+                            if (res.role === 'siswa') {
+                                document.getElementById('profilExtraInfoContainer').classList.remove('hidden');
+                                document.getElementById('profilExtraSiswa').classList.remove('hidden');
+                                document.getElementById('profilNisInfo').innerText = res.nis || '-';
+                                document.getElementById('profilKelasInfo').innerText = res.kelas || '-';
+                            } else if (res.role === 'guru') {
+                                document.getElementById('profilExtraInfoContainer').classList.remove('hidden');
+                                document.getElementById('profilExtraGuru').classList.add('hidden');
+                                document.getElementById('profilNipInfo').innerText = res.nip || '-';
+                                document.getElementById('profilMapelInfo').innerText = res.mapel || '-';
+                                document.getElementById('profilMapelInfo').title = res.mapel || '-';
+                            }
+                            
+                            const img = document.getElementById('profilCurrentPhoto');
+                            const icon = document.getElementById('profilDefaultIcon');
+                            
+                            const mobImg = document.getElementById('mobileHeaderProfileImg');
+                            const mobIcon = document.getElementById('mobileHeaderProfileIcon');
+
+                            const dskImg = document.getElementById('desktopSidebarProfileImg');
+                            const dskIcon = document.getElementById('desktopSidebarProfileIcon');
+
+                            const shtImg = document.getElementById('mobileSheetProfileImg');
+                            const shtIcon = document.getElementById('mobileSheetProfileIcon');
+
+                            if (res.foto && res.foto.trim() !== '') {
+                                const finalSrc = res.foto.startsWith('data:') ? res.foto : 'data:image/png;base64,' + res.foto;
+                                
+                                // Tampilkan foto dan sembunyikan default icon di modal pengaturan profil
+                                if (img) { img.src = finalSrc; img.classList.remove('hidden'); }
+                                if (icon) { icon.classList.add('hidden'); }
+                                
+                                // Tampilkan di header mobile
+                                if (mobImg) { mobImg.src = finalSrc; mobImg.classList.remove('hidden'); }
+                                if (mobIcon) { mobIcon.classList.add('hidden'); }
+
+                                // Tampilkan di sidebar desktop
+                                if (dskImg) { dskImg.src = finalSrc; dskImg.classList.remove('hidden'); }
+                                if (dskIcon) { dskIcon.classList.add('hidden'); }
+
+                                // Tampilkan di bottom sheet menu
+                                if (shtImg) { shtImg.src = finalSrc; shtImg.classList.remove('hidden'); }
+                                if (shtIcon) { shtIcon.classList.add('hidden'); }
+                            } else {
+                                // JIKA DI DATABASE BELUM ADA FILE FOTONYA MAKA TAMPILKAN DEFAULT ICON
+                                // Sembunyikan semua elemen img dan tampilkan icon user default
+                                if (img) { img.classList.add('hidden'); img.src = ''; }
+                                if (icon) { icon.classList.remove('hidden'); }
+                                
+                                if (mobImg) { mobImg.classList.add('hidden'); mobImg.src = ''; }
+                                if (mobIcon) { mobIcon.classList.remove('hidden'); }
+
+                                if (dskImg) { dskImg.classList.add('hidden'); dskImg.src = ''; }
+                                if (dskIcon) { dskIcon.classList.remove('hidden'); }
+
+                                if (shtImg) { shtImg.classList.add('hidden'); shtImg.src = ''; }
+                                if (shtIcon) { shtIcon.classList.remove('hidden'); }
+                            }
+                        } else {
+                            console.error('Data akun tidak termuat: ' + (res.message || 'Error tidak diketahui'));
+                            Swal.fire({ icon: 'warning', title: 'Perhatian', text: res.message || 'Tidak dapat memuat profil.'});
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        console.error('Koneksi profil ke server terganggu: ' + err);
+                    })
+                    .getUserProfileFromSheets(currentName, sessionId); // Bypass kirim identitas ke server
+            } else {
+                setTimeout(() => {
+                    document.getElementById('profilRoleInfo').innerText = 'GURU (Simulasi)';
+                    document.getElementById('profilNameInfo').innerText = 'Budi Handoko';
+                    document.getElementById('profilUsernameInfo').innerText = 'budihandoko';
+                    document.getElementById('profilInpUsername').value = 'budihandoko';
+                    
+                    document.getElementById('profilExtraInfoContainer').classList.remove('hidden');
+                    document.getElementById('profilExtraGuru').classList.remove('hidden');
+                    document.getElementById('profilNipInfo').innerText = '198001012005011003';
+                    document.getElementById('profilMapelInfo').innerText = 'Matematika, Fisika';
+                    document.getElementById('profilMapelInfo').title = 'Matematika, Fisika';
+                }, 800);
+            }
+        };
+
+        window.togglePasswordVisibility = function(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input && icon) {
+                if (input.type === "password") {
+                    input.type = "text";
+                    icon.classList.remove("fa-eye");
+                    icon.classList.add("fa-eye-slash");
+                } else {
+                    input.type = "password";
+                    icon.classList.remove("fa-eye-slash");
+                    icon.classList.add("fa-eye");
+                }
+            }
+        };
+
+        // --- SISTEM CROP FOTO ---
+        window.previewProfilFoto = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Limit ditingkatkan karena file besar akan dicrop dan dikompres sebelum dikirim
+                if (file.size > 15 * 1024 * 1024) {
+                    Swal.fire({ icon: 'warning', title: 'Ukuran Terlalu Besar', text: 'Ukuran foto maksimal adalah 15MB.' });
+                    event.target.value = ''; 
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const cropModal = document.getElementById('cropModal');
+                    const cropContent = document.getElementById('cropModalContent');
+                    
+                    // Menunjuk ke ID profilImageToCrop yang baru
+                    const imageToCrop = document.getElementById('profilImageToCrop'); 
+                    
+                    if (cropperInstance) { 
+                        cropperInstance.destroy(); 
+                        cropperInstance = null; 
+                    }
+
+                    imageToCrop.src = e.target.result;
+                    
+                    cropModal.classList.remove('hidden');
+                    void cropModal.offsetWidth;
+                    cropModal.classList.remove('opacity-0');
+                    cropContent.classList.remove('scale-95');
+                    
+                    // Inisiasi CropperJS SETELAH gambar benar-benar dimuat oleh browser
+                    imageToCrop.onload = function() {
+                        if (cropperInstance) { 
+                            cropperInstance.destroy(); 
+                        }
+                        cropperInstance = new Cropper(imageToCrop, {
+                            aspectRatio: 1, 
+                            viewMode: 1,
+                            autoCropArea: 0.8,
+                            background: false,
+                            responsive: true,
+                            checkOrientation: false
+                        });
+                    };
+                }
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.closeCropModal = function(isApplied = false) {
+            const cropModal = document.getElementById('cropModal');
+            const cropContent = document.getElementById('cropModalContent');
+            cropModal.classList.add('opacity-0');
+            cropContent.classList.add('scale-95');
+            setTimeout(() => { 
+                cropModal.classList.add('hidden');
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                    cropperInstance = null;
+                }
+                // Jika user batal crop, kosongkan input file
+                if (!isApplied) {
+                    document.getElementById('profilInpFoto').value = '';
+                }
+            }, 300);
+        };
+
+        window.applyCrop = function() {
+            if (!cropperInstance) return;
+            
+            // Crop dengan resolusi konstan & jelas (High Quality)
+            const canvas = cropperInstance.getCroppedCanvas({
+                width: 512,
+                height: 512,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+            
+            // Konversi ke base64 (format JPEG dengan kualitas 0.9 / 90%)
+            croppedImageBase64 = canvas.toDataURL('image/jpeg', 0.9);
+            
+            // Tampilkan hasil crop ke profil preview
+            const img = document.getElementById('profilCurrentPhoto');
+            const icon = document.getElementById('profilDefaultIcon');
+            
+            if(img) { img.src = croppedImageBase64; img.classList.remove('hidden'); }
+            if(icon) { icon.classList.add('hidden'); }
+            
+            // Tutup Modal Crop dan pertahankan data
+            closeCropModal(true);
+        };
+        // --- AKHIR SISTEM CROP FOTO ---
+
+        window.submitUpdateProfil = function(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSimpanProfil');
+            const originalText = btn.innerHTML;
+            
+            const username = document.getElementById('profilInpUsername').value;
+            const password = document.getElementById('profilInpPassword').value;
+            const passwordConfirm = document.getElementById('profilInpPasswordConfirm').value;
+
+            if (password && password !== passwordConfirm) {
+                Swal.fire({ icon: 'error', title: 'Validasi Gagal', text: 'Konfirmasi password tidak cocok!' });
+                return;
+            }
+
+            // Cek apakah ada base64 crop, bukan file input mentah
+            if (!username && !password && !croppedImageBase64) {
+                Swal.fire({ icon: 'info', title: 'Tidak Ada Perubahan', text: 'Anda belum mengisi data baru atau foto belum disesuaikan.' });
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+            let currentName = document.getElementById('userNameDisplay') ? document.getElementById('userNameDisplay').innerText : '';
+            if (currentName === 'Nama User' || currentName.trim() === '') {
+                if (document.getElementById('sheetUserName')) currentName = document.getElementById('sheetUserName').innerText;
+            }
+            let sessionId = '';
+            try { sessionId = localStorage.getItem('id_user') || sessionStorage.getItem('id_user') || localStorage.getItem('username') || ''; } catch(e) {}
+
+            const payload = { 
+                username: username, 
+                password: password,
+                clientName: currentName,
+                sessionId: sessionId
+            };
+
+            // Jika ada foto hasil crop, langsung masukkan base64 ke payload
+            if (croppedImageBase64) {
+                payload.fotoBase64 = croppedImageBase64.split(',')[1];
+                payload.fotoMimeType = 'image/jpeg';
+                payload.fotoName = "profil.jpg";
+                window.kirimDataProfilKeServer(payload, btn, originalText);
+            } else {
+                window.kirimDataProfilKeServer(payload, btn, originalText);
+            }
+        };
+
+        window.kirimDataProfilKeServer = function(payload, btn, originalText) {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(res) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        if(res && res.status === 'success') {
+                            Swal.fire({ 
+                                icon: 'success', 
+                                title: 'Berhasil', 
+                                text: res.message || 'Profil berhasil diperbarui. Jika Anda mengubah Username/Password, silakan login ulang.' 
+                            }).then(() => {
+                                document.getElementById('profilInpPassword').value = '';
+                                document.getElementById('profilInpPasswordConfirm').value = '';
+                                document.getElementById('profilInpFoto').value = '';
+                                closeProfileModal(); 
+                                window.loadProfilData(); // Otomatis me-refresh foto/avatar
+                            });
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Gagal', text: (res && res.message) ? res.message : 'Terjadi kesalahan saat menyimpan.' });
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        Swal.fire({ icon: 'error', title: 'Error Server', text: 'Gagal terhubung ke server.' });
+                    })
+                    .updateUserProfil(payload); 
+            } else {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    Swal.fire({ icon: 'success', title: 'Berhasil (Preview)', text: 'Profil berhasil diperbarui secara simulasi.' }).then(() => {
+                        document.getElementById('profilInpPassword').value = '';
+                        document.getElementById('profilInpPasswordConfirm').value = '';
+                        document.getElementById('profilInpFoto').value = '';
+                        closeProfileModal();
+                    });
+                }, 1000);
+            }
+        };
+        // --- AKHIR SCRIPT PROFIL BARU ---
+
+        // --- SISTEM LOGOUT BARU DENGAN HAPUS CACHE & KEMBALI KE LANDING PAGE TANPA BLANK ---
+        const setupLogoutFunction = () => {
+            window.logout = function() {
+                Swal.fire({
+                    title: 'Keluar Aplikasi?',
+                    text: 'Sesi dan data sementara (cache) Anda akan dibersihkan.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#94a3b8',
+                    confirmButtonText: 'Ya, Keluar',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Notifikasi bersihkan cache di pojok kanan atas
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Sesi & Cache dibersihkan',
+                            text: 'Kembali ke landing page...',
+                            showConfirmButton: false,
+                            timer: 1500,
+                            timerProgressBar: true
+                        });
+                        
+                        // Menghapus cache dan informasi sesi pada browser
+                        try {
+                            localStorage.clear();
+                            sessionStorage.clear();
+                        } catch(e) {}
+                        
+                        // Memanggil API server untuk log out di sisi backend (bila ada)
+                        try {
+                            if(typeof google !== 'undefined' && google.script && google.script.run) {
+                                if(typeof google.script.run.logoutZett === 'function') {
+                                    google.script.run.logoutZett(); 
+                                }
+                            }
+                        } catch(e) {}
+                        
+                        // Me-reset UI kembali ke halaman landing page awal (SPA Reset) secara menyeluruh
+                        setTimeout(() => {
+                            // Bersihkan URL hash jika ada (Misal sedang di menu #dashboard)
+                            try {
+                                if (history.pushState) {
+                                    history.pushState("", document.title, window.location.pathname + window.location.search);
+                                } else {
+                                    window.location.hash = "";
+                                }
+                            } catch(e) {}
+
+                            // 1. Sembunyikan main area
+                            const mainApp = document.getElementById('mainApp');
+                            if (mainApp) {
+                                mainApp.classList.add('hidden');
+                                mainApp.classList.remove('flex');
+                            }
+                            
+                            // 2. Sembunyikan login screen jika kebetulan terbuka
+                            const loginScreen = document.getElementById('loginScreen');
+                            if (loginScreen) {
+                                loginScreen.classList.add('hidden');
+                                loginScreen.classList.remove('flex');
+                            }
+                            
+                            // 3. Tutup elemen menu mobile yang terbuka
+                            const mobileMoreMenu = document.getElementById('mobileMoreMenu');
+                            if (mobileMoreMenu) mobileMoreMenu.classList.add('hidden');
+
+                            // Tutup popup profil jika terbuka
+                            const profileModal = document.getElementById('profileModal');
+                            if (profileModal) profileModal.classList.add('hidden');
+                            
+                            // 4. Reset form login sepenuhnya dan kembalikan state awal tombol
+                            const loginForm = document.getElementById('loginForm');
+                            if (loginForm) loginForm.reset();
+
+                            // Reset tipe input password jadi tertutup (dot) lagi jika sebelumnya sempat di klik icon matanya
+                            const passInput = document.getElementById('password');
+                            const eyeIcon = document.getElementById('eyeIcon');
+                            if (passInput) passInput.type = 'password';
+                            if (eyeIcon) {
+                                eyeIcon.classList.remove('fa-eye-slash');
+                                eyeIcon.classList.add('fa-eye');
+                            }
+                            
+                            // Kembalikan text button login jika sebelumnya berubah
+                            const btnLoginText = document.getElementById('btnLoginText');
+                            if (btnLoginText) btnLoginText.innerText = 'Masuk Sekarang';
+                            const btnLogin = document.getElementById('btnLogin');
+                            if (btnLogin) btnLogin.disabled = false;
+                            
+                            // 5. Tampilkan kembali landing page awal secara bersih
+                            const landingPage = document.getElementById('landingPage');
+                            if (landingPage) {
+                                landingPage.classList.remove('hidden');
+                            }
+
+                            // Jika ada fungsi reset login flag dari modul lain, eksekusi diam-diam
+                            try {
+                                if (typeof isLogin !== 'undefined') isLogin = false; 
+                                if (typeof renderLandingPage === 'function') renderLandingPage();
+                            } catch(e) {}
+                            
+                            // Scroll balik ke paling atas seperti awal mula dibuka
+                            window.scrollTo(0, 0);
+
+                        }, 1500);
+                    }
+                });
+            };
+        };
+        
+        // Memastikan fungsi logout terpasang dengan kuat di level root window
+        setupLogoutFunction();
+        // --- AKHIR SISTEM LOGOUT ---
+
+        window.addEventListener('load', () => {
+            // Pasang ulang untuk mencegah fungsi ditimpa oleh file include lainnya
+            setupLogoutFunction();
+            
+            window.nextSlide = function() {
+                let area = document.getElementById('landingPengumumanArea'); if(!area) return;
+                let track = area.querySelector('#sliderTrack') || area.querySelector('div.flex') || area.firstElementChild; if(!track) return;
+                let slides = Array.from(track.children).filter(c => c.tagName === 'DIV' && !c.id?.includes('dots')); if(slides.length <= 1) return;
+                if (typeof window.currentSlide === 'undefined') window.currentSlide = 0;
+                window.currentSlide = (window.currentSlide + 1) % slides.length; window.updateSliderPosition(); window.resetSliderInterval();
+            };
+            window.prevSlide = function() {
+                let area = document.getElementById('landingPengumumanArea'); if(!area) return;
+                let track = area.querySelector('#sliderTrack') || area.querySelector('div.flex') || area.firstElementChild; if(!track) return;
+                let slides = Array.from(track.children).filter(c => c.tagName === 'DIV' && !c.id?.includes('dots')); if(slides.length <= 1) return;
+                if (typeof window.currentSlide === 'undefined') window.currentSlide = 0;
+                window.currentSlide = (window.currentSlide - 1 + slides.length) % slides.length; window.updateSliderPosition(); window.resetSliderInterval();
+            };
+            window.goToSlide = function(index) { window.currentSlide = index; window.updateSliderPosition(); window.resetSliderInterval(); };
+            window.updateSliderPosition = function() {
+                let area = document.getElementById('landingPengumumanArea'); if(!area) return;
+                let track = area.querySelector('#sliderTrack') || area.querySelector('div.flex') || area.firstElementChild; if(!track) return;
+                track.classList.remove('flex', 'transition-transform', 'duration-500'); track.style.transform = 'none'; track.style.position = 'relative';
+                let slides = Array.from(track.children).filter(c => c.tagName === 'DIV' && !c.id?.includes('dots')); if(slides.length === 0) return;
+                if (typeof window.currentSlide === 'undefined') window.currentSlide = 0;
+                slides.forEach((slide, index) => {
+                    slide.style.width = '100%'; slide.style.transition = 'opacity 1s ease-in-out';
+                    if (index === window.currentSlide) { slide.style.position = 'relative'; slide.style.opacity = '1'; slide.style.zIndex = '10'; slide.style.pointerEvents = 'auto'; } 
+                    else { slide.style.position = 'absolute'; slide.style.top = '0'; slide.style.left = '0'; slide.style.opacity = '0'; slide.style.zIndex = '0'; slide.style.pointerEvents = 'none'; }
+                });
+                let dotsContainer = area.querySelector('.absolute.bottom-4') || document.getElementById('sliderDots');
+                if (dotsContainer) { let dots = dotsContainer.querySelectorAll('button'); dots.forEach((dot, index) => { if(index === window.currentSlide) { dot.className = 'w-6 h-2 rounded-full bg-indigo-600 transition-all cursor-pointer shadow-sm'; } else { dot.className = 'w-2 h-2 rounded-full bg-indigo-200 hover:bg-indigo-400 transition-all cursor-pointer'; } }); }
+            };
+            window.resetSliderInterval = function() { if(window.sliderInterval) clearInterval(window.sliderInterval); window.sliderInterval = setInterval(() => { if(typeof window.nextSlide === 'function') window.nextSlide(); }, 5000); };
+            const area = document.getElementById('landingPengumumanArea');
+            if(area) { const observer = new MutationObserver(() => { setTimeout(() => { if(typeof window.updateSliderPosition === 'function') window.updateSliderPosition(); if(typeof window.resetSliderInterval === 'function') window.resetSliderInterval(); }, 50); }); observer.observe(area, { childList: true, subtree: true }); }
+            
+            const loginScreen = document.getElementById('loginScreen');
+            if(loginScreen) { const observer = new MutationObserver(() => { const landingLogo = document.getElementById('landingAppLogo'); const loginLogo = document.getElementById('loginAppLogo'); const loginIcon = document.getElementById('loginAppIcon'); if (landingLogo && landingLogo.src && !landingLogo.src.endsWith('undefined') && !landingLogo.classList.contains('hidden') && loginLogo) { loginLogo.src = landingLogo.src; loginLogo.classList.remove('hidden'); if (loginIcon) loginIcon.classList.add('hidden'); } }); observer.observe(loginScreen, { childList: true, subtree: true }); }
+
+            // Trigger muat foto profil sesaat setelah halaman utama aplikasi terbuka dari login
+            const mainAppEl = document.getElementById('mainApp');
+            if (mainAppEl) {
+                const visibilityObserver = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.attributeName === 'class') {
+                            if (!mainAppEl.classList.contains('hidden')) {
+                                window.loadProfilData(); 
+                            }
+                        }
+                    });
+                });
+                visibilityObserver.observe(mainAppEl, { attributes: true });
+            }
+        });
+    </script>
+
+    <?!= include('Modul_Materi'); ?>
+    <?!= include('Modul_Profil'); ?>
+    <?!= include('Modul_Referensi'); ?>
+    <?!= include('Modul_Adm'); ?>
+    <?!= include('Modul_Tugas'); ?>
+    <?!= include('Modul_Penilaian'); ?>
+    <?!= include('Modul_LMS_UI'); ?>
+    <?!= include('Modul_LMS_Script_Part1'); ?>
+    <?!= include('Modul_LMS_Script_Part2'); ?>
+    <?!= include('Modul_Laporan'); ?>
+    <?!= include('Main_Part1'); ?>
+    <?!= include('Main_Part2'); ?>
+    <?!= include('Modul_form'); ?>
+    <?!= include('Modul_Sumatif'); ?>
+    <?!= include('Modul_Informasi'); ?>
+    <?!= include('Dashboard_CBT'); ?>
+    <?!= include('Bank_Soal_CBT'); ?>
+    <?!= include('Jadwal_Hasil_CBT'); ?>
+    <?!= include('Monitoring_CBT'); ?>
+    <?!= include('Main_CBT'); ?>
+    <?!= include('Dash_LapSiswa'); ?>
+</body>
+</html>
