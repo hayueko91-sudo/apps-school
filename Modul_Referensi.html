@@ -1,0 +1,1432 @@
+<!-- ==================== MODUL REFERENSI: DATA GURU ==================== -->
+<template id="tpl-ref-guru">
+    <div class="animate-fade">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div>
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-800">Data Guru</h2>
+                <p class="text-slate-500 text-sm mt-1">Kelola data profil guru dan otomatisasi akun akses.</p>
+            </div>
+            <button onclick="showGuruModal('tambah')" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-plus"></i> Tambah Guru
+            </button>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <!-- ZettBOT Form Pencarian -->
+            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex gap-3">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchGuru" placeholder="Cari NIP atau Nama Guru..." class="w-full border border-slate-200 pl-10 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none" oninput="renderTableGuru(true)">
+                </div>
+            </div>
+
+            <!-- Tambahan Scroll Vertikal & Sticky Header -->
+            <div class="overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar border-b border-slate-100">
+                <table class="w-full text-left min-w-[700px] relative">
+                    <thead class="bg-slate-50 text-xs md:text-sm text-slate-500 border-b border-slate-100 uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+                        <tr>
+                            <th class="p-4 w-12 text-center">No</th>
+                            <th class="p-4">Foto</th>
+                            <th class="p-4">NIP</th>
+                            <th class="p-4">Nama Guru</th>
+                            <th class="p-4 text-center">Mapel</th>
+                            <th class="p-4 text-center w-28">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableDataGuru">
+                        <tr><td colspan="6" class="text-center p-8"><div class="loader-spin border-slate-300 border-t-indigo-600 mx-auto"></div><p class="text-slate-500 mt-2 text-sm">Memuat data Guru...</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MAPEL DETAIL -->
+    <div id="modalMapelDetail" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="document.getElementById('modalMapelDetail').classList.add('hidden')"></div>
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm relative z-10 p-6 animate-fade">
+            <h3 class="text-lg font-bold mb-4 border-b pb-2">Daftar Mata Pelajaran</h3>
+            <table class="w-full text-sm">
+                <!-- ZettBOT Update: Header disesuaikan (Hanya No & Nama Mapel) -->
+                <thead><tr class="bg-slate-50"><th class="p-2 border w-12 text-center">No</th><th class="p-2 border">Nama Mapel</th></tr></thead>
+                <tbody id="listMapelBody"></tbody>
+            </table>
+            <button onclick="document.getElementById('modalMapelDetail').classList.add('hidden')" class="mt-4 w-full bg-slate-100 hover:bg-slate-200 transition py-2 rounded-xl font-bold text-slate-700">Tutup</button>
+        </div>
+    </div>
+
+    <!-- MODAL FORM GURU -->
+    <div id="modalFormGuru" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeGuruModal()"></div>
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl relative z-10 max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800" id="guruModalTitle">Tambah Data Guru</h3>
+                <button onclick="closeGuruModal()" class="text-slate-400 hover:text-red-500 transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                <form id="formGuru" onsubmit="saveDataGuru(event)">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                             <label class="block text-sm font-medium mb-1 text-slate-700">Foto Guru</label>
+                             <div class="flex items-center gap-4">
+                                 <img id="guru_foto_val_preview" src="" class="w-12 h-12 rounded-full object-cover border-2 border-indigo-100 shadow-sm hidden bg-slate-50">
+                                 <div class="flex-1">
+                                     <input type="file" accept="image/*" onchange="processImage(this, 'guru_foto_val')" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                     <input type="hidden" id="guru_foto_val">
+                                 </div>
+                             </div>
+                        </div>
+                        <div><label class="text-sm font-medium text-slate-700">NIP</label><input type="text" id="guru_nip" required class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+                        <div><label class="text-sm font-medium text-slate-700">Nama</label><input type="text" id="guru_nama" required class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+                        
+                        <div class="md:col-span-2 border-t border-slate-100 pt-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <label class="text-sm font-bold text-slate-700">Mata Pelajaran</label>
+                                <button type="button" onclick="addMapelInput()" class="text-xs bg-indigo-50 hover:bg-indigo-100 transition text-indigo-600 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1"><i class="fa-solid fa-plus"></i> Tambah Mapel</button>
+                            </div>
+                            <div id="containerMapelInputs" class="space-y-2"></div>
+                        </div>
+
+                        <div class="md:col-span-2 border-t border-slate-100 pt-4">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Info Akun Login <span class="font-normal lowercase">(Opsional: Kosongkan jika pakai NIP)</span></label>
+                            <div class="grid grid-cols-2 gap-4 mt-2">
+                                <input type="text" id="guru_username" placeholder="Username" class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                                <input type="text" id="guru_password" placeholder="Password" class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" id="btnSimpanGuru" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 transition shadow-md shadow-indigo-200 text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2">
+                        <span>Simpan Data Guru</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- ==================== MODUL REFERENSI: DATA SISWA ==================== -->
+<template id="tpl-ref-siswa">
+    <div class="animate-fade">
+        <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
+            <div>
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-800">Data Siswa</h2>
+                <p class="text-slate-500 text-sm mt-1">Kelola data siswa dan otomatisasi akun akses ke dalam sistem.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 w-full xl:w-auto">
+                <button onclick="showNaikKelasModal()" class="flex-1 xl:flex-none bg-amber-500 hover:bg-amber-600 transition shadow-md shadow-amber-200 text-white px-4 md:px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-turn-up"></i> <span class="hidden md:inline">Naik Kelas</span>
+                </button>
+                <button onclick="showMassalSiswaModal()" class="flex-1 xl:flex-none bg-green-600 hover:bg-green-700 transition shadow-md shadow-green-200 text-white px-4 md:px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-file-excel"></i> <span class="hidden md:inline">Input Massal</span>
+                </button>
+                <button onclick="showSiswaModal('tambah')" class="flex-1 xl:flex-none bg-indigo-600 hover:bg-indigo-700 transition shadow-md shadow-indigo-200 text-white px-4 md:px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i> <span class="hidden md:inline">Tambah Siswa</span>
+                </button>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <!-- ZettBOT Form Pencarian & Filter Kelas -->
+            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row gap-3">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchSiswa" placeholder="Cari NIS atau Nama Siswa..." class="w-full border border-slate-200 pl-10 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none" oninput="renderTableSiswa(true)">
+                </div>
+                <select id="filterKelasSiswa" class="w-full md:w-48 border border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500" onchange="renderTableSiswa(true)">
+                    <option value="">Semua Kelas</option>
+                </select>
+            </div>
+
+            <!-- Tambahan Scroll Vertikal & Sticky Header Khusus Siswa -->
+            <div class="overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar border-b border-slate-100">
+                <table class="w-full text-left min-w-[600px] relative">
+                    <thead class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wider sticky top-0 z-10 shadow-sm border-b border-slate-100">
+                        <tr><th class="p-4 w-12 text-center">No</th><th class="p-4">Foto</th><th class="p-4">NIS</th><th class="p-4">Nama Siswa</th><th class="p-4">Kelas</th><th class="p-4 text-center w-28">Aksi</th></tr>
+                    </thead>
+                    <tbody id="tableDataSiswa">
+                        <tr><td colspan="6" class="text-center p-8"><div class="loader-spin border-slate-300 border-t-indigo-600 mx-auto"></div><p class="text-slate-500 mt-2 text-sm">Memuat data Siswa...</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL INPUT MASSAL SISWA -->
+    <div id="modalMassalSiswa" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeMassalSiswaModal()"></div>
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg relative z-10 flex flex-col max-h-[90vh] animate-fade">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800">Input Massal Siswa</h3>
+                <button onclick="closeMassalSiswaModal()" class="text-slate-400 hover:text-red-500 transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scrollbar">
+                <div class="bg-blue-50 p-4 rounded-xl text-blue-800 text-sm mb-4 border border-blue-100">
+                    <i class="fa-solid fa-circle-info mr-2"></i> Copy (Salin) data dari Ms. Excel dengan struktur berurutan: <br><b>1. NIS &nbsp; 2. Nama Lengkap &nbsp; 3. Kelas</b><br>Lalu Paste (Tempel) ke kotak di bawah ini.
+                </div>
+                <textarea id="textareaMassalSiswa" rows="8" class="w-full border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 whitespace-pre font-mono bg-slate-50 focus:bg-white transition-colors" placeholder="1001&#9;Andi Saputra&#9;10 IPA 1&#10;1002&#9;Budi Anto&#9;10 IPA 1"></textarea>
+
+                <!-- Progress UI (Hidden by Default) -->
+                <div id="progressAreaSiswa" class="hidden mt-5">
+                    <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+                        <span id="progressLabelSiswa">Menyimpan data...</span>
+                        <span id="progressTextSiswa">0 / 0</span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden shadow-inner">
+                        <div id="progressBarSiswa" class="bg-gradient-to-r from-indigo-500 to-blue-500 h-full rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <button onclick="prosesMassalSiswa()" id="btnProsesMassalSiswa" class="mt-6 w-full bg-green-600 hover:bg-green-700 transition shadow-md shadow-green-200 text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-file-excel"></i> <span>Proses Data Massal</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FORM SISWA -->
+    <div id="modalFormSiswa" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeSiswaModal()"></div>
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 flex flex-col max-h-[90vh] animate-fade">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800" id="siswaModalTitle">Input Data Siswa</h3>
+                <button onclick="closeSiswaModal()" class="text-slate-400 hover:text-red-500 transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scrollbar">
+                <form onsubmit="saveDataSiswa(event)" id="formSiswa">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Foto Siswa</label>
+                            <div class="flex items-center gap-4 mt-1">
+                                <img id="siswa_foto_val_preview" src="" class="w-12 h-12 rounded-full object-cover border-2 border-indigo-100 shadow-sm hidden bg-slate-50">
+                                <div class="flex-1">
+                                    <input type="file" accept="image/*" onchange="processImage(this, 'siswa_foto_val')" class="block w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                    <input type="hidden" id="siswa_foto_val">
+                                </div>
+                            </div>
+                        </div>
+                        <div><label class="text-sm font-medium text-slate-700">NIS</label><input type="text" id="siswa_nis" placeholder="Masukkan NIS" required class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+                        <div><label class="text-sm font-medium text-slate-700">Nama Lengkap</label><input type="text" id="siswa_nama" placeholder="Nama Lengkap Siswa" required class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+                        <div><label class="text-sm font-medium text-slate-700">Kelas</label><input type="text" id="siswa_kelas" placeholder="Cth: 10 IPA 1" required class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+                        
+                        <div class="border-t border-slate-100 pt-3">
+                            <label class="text-xs font-bold text-slate-500 uppercase">Akun <span class="font-normal lowercase">(Opsional: Kosongkan jika pakai NIS)</span></label>
+                            <div class="grid grid-cols-2 gap-3 mt-2">
+                                <input type="text" id="siswa_username" placeholder="Username" class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                                <input type="text" id="siswa_password" placeholder="Password" class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" id="btnSimpanSiswa" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 transition shadow-md text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2">
+                        <span>Simpan Data Siswa</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NAIK KELAS / PINDAH TA -->
+    <div id="modalNaikKelas" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeNaikKelasModal()"></div>
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 flex flex-col max-h-[90vh] animate-fade">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800">Pindah / Naik Kelas</h3>
+                <button onclick="closeNaikKelasModal()" class="text-slate-400 hover:text-red-500 transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scrollbar">
+                <form onsubmit="prosesNaikKelas(event)" id="formNaikKelas">
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 p-4 rounded-xl text-blue-800 text-sm mb-2 border border-blue-100">
+                            <i class="fa-solid fa-circle-info mr-2"></i> Siswa akan diarsip di TA asal, lalu disalin ke TA Aktif dengan nama kelas yang baru.
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Tahun Ajaran Asal</label>
+                            <select id="naik_ta_asal" required onchange="onTaAsalSelected(this)" class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none mt-1 text-sm">
+                                <option value="">Memuat Tahun Ajaran...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Kelas Asal</label>
+                            <select id="naik_kelas_asal" required class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none mt-1 text-sm">
+                                <option value="">Pilih Tahun Ajaran terlebih dahulu...</option>
+                            </select>
+                        </div>
+                        <div class="flex justify-center text-slate-400"><i class="fa-solid fa-angles-down text-xl"></i></div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Kelas Tujuan Baru (Di TA Aktif)</label>
+                            <input type="text" id="naik_kelas_tujuan" placeholder="Cth: 11 IPA 1" required class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none mt-1 text-sm">
+                        </div>
+                    </div>
+                    <button type="submit" id="btnSimpanNaikKelas" class="mt-6 w-full bg-amber-500 hover:bg-amber-600 transition shadow-md shadow-amber-200 text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2">
+                        <span>Proses Pindah Kelas</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- ==================== MODUL REFERENSI: MAPING GURU ==================== -->
+<template id="tpl-ref-maping">
+    <div class="animate-fade">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800">Maping Guru</h2>
+                <p class="text-slate-500 text-sm mt-1">Atur penugasan mata pelajaran dan kelas untuk setiap guru (TA Aktif).</p>
+            </div>
+            <button onclick="showMapingModal('tambah')" class="bg-indigo-600 hover:bg-indigo-700 transition shadow-md shadow-indigo-200 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-plus"></i> Tambah Maping
+            </button>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <!-- ZettBOT Form Pencarian Maping -->
+            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex gap-3">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchMaping" placeholder="Cari Guru atau Mapel..." class="w-full border border-slate-200 pl-10 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none" oninput="renderTableMaping(true)">
+                </div>
+            </div>
+
+            <!-- Tambahan Scroll Vertikal & Sticky Header -->
+            <div class="overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar border-b border-slate-100">
+                <table class="w-full text-left min-w-[600px] relative">
+                    <thead class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wider sticky top-0 z-10 shadow-sm border-b border-slate-100">
+                        <tr><th class="p-4 w-12 text-center">No</th><th class="p-4">NIP</th><th class="p-4">Nama Guru</th><th class="p-4">Mapel</th><th class="p-4 text-center">Kelas</th><th class="p-4 text-center w-28">Aksi</th></tr>
+                    </thead>
+                    <tbody id="tableDataMaping">
+                        <tr><td colspan="6" class="text-center p-8"><div class="loader-spin border-slate-300 border-t-indigo-600 mx-auto"></div><p class="text-slate-500 mt-2 text-sm">Memuat data Maping...</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KELAS DETAIL (MAPING) -->
+    <div id="modalKelasDetail" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="document.getElementById('modalKelasDetail').classList.add('hidden')"></div>
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm relative z-10 p-6 animate-fade">
+            <h3 class="text-lg font-bold mb-4 border-b pb-2">Daftar Kelas Diampu</h3>
+            <table class="w-full text-sm">
+                <thead><tr class="bg-slate-50"><th class="p-2 border w-12 text-center">No</th><th class="p-2 border">Kelas Diampu</th></tr></thead>
+                <tbody id="listKelasBody"></tbody>
+            </table>
+            <button onclick="document.getElementById('modalKelasDetail').classList.add('hidden')" class="mt-4 w-full bg-slate-100 hover:bg-slate-200 transition py-2 rounded-xl font-bold text-slate-700">Tutup</button>
+        </div>
+    </div>
+
+    <!-- MODAL FORM MAPING -->
+    <div id="modalFormMaping" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeMapingModal()"></div>
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 flex flex-col max-h-[90vh] animate-fade">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800" id="mapingModalTitle">Input Maping Guru</h3>
+                <button onclick="closeMapingModal()" class="text-slate-400 hover:text-red-500 transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scrollbar">
+                <form onsubmit="saveDataMaping(event)" id="formMaping">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Pilih Guru</label>
+                            <select id="maping_id_guru" required onchange="onGuruSelectedMaping(this)" class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm mt-1">
+                                <option value="">Memuat data guru...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Pilih Mapel</label>
+                            <select id="maping_mapel" required class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm mt-1">
+                                <option value="">Pilih guru terlebih dahulu...</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Kelas</label>
+                            <div class="relative mt-1">
+                                <div id="maping_kelas_tags" class="flex flex-wrap gap-2 mb-2 empty:hidden"></div>
+                                <input type="text" id="maping_kelas_search" placeholder="Cari dan pilih kelas..." class="w-full border p-2.5 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm" oninput="filterKelasDropdown()" onfocus="showKelasDropdown()">
+                                <div id="maping_kelas_dropdown" class="absolute z-20 hidden w-full bg-white border border-slate-100 rounded-xl shadow-lg max-h-40 overflow-y-auto mt-1 custom-scrollbar"></div>
+                                <input type="hidden" id="maping_kelas" required>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" id="btnSimpanMaping" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 transition shadow-md text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2">
+                        <span>Simpan Maping</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- ==================== MODAL CROPPER FOTO (ZETTBOT) ==================== -->
+<div id="modalCropper" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-4 print-hide">
+    <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onclick="closeCropperModal()"></div>
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col relative z-10 overflow-hidden animate-fade" id="modalCropperContent">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+            <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><i class="fa-solid fa-crop-simple text-indigo-600"></i> Sesuaikan Foto Profil</h3>
+            <button onclick="closeCropperModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors border border-slate-200 shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-4 bg-slate-200 flex items-center justify-center relative" style="height: 50vh;">
+            <!-- Menggunakan ID refImageToCrop agar tidak terbentur dengan imageToCrop pada file index.html -->
+            <img id="refImageToCrop" src="" class="max-w-full max-h-full block" style="margin: 0 auto;">
+        </div>
+        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 shrink-0 flex justify-end gap-3 rounded-b-3xl">
+            <button type="button" onclick="closeCropperModal()" class="px-6 py-2.5 rounded-xl font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-sm">Batal</button>
+            <button type="button" onclick="saveCrop()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md shadow-indigo-200 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-check"></i> Potong & Simpan
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tambahkan library SweetAlert2 via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Tambahkan library Cropper.js via CDN untuk fitur crop manual -->
+<link class="print-hide" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+<script class="print-hide" src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+<script>
+    /** ================= ZETTBOT TOAST CONFIG (POJOK KANAN ATAS) ================= **/
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+    });
+
+    /** ================= LOGIKA CROPPER MANUAL ================= **/
+    let currentCropper = null;
+    let cropTargetId = '';
+
+    function processImage(input, targetId) {
+        if (!input.files || !input.files[0]) return;
+        
+        cropTargetId = targetId;
+        var reader = new FileReader();
+        
+        reader.onload = function(e) {
+            var modal = document.getElementById('modalCropper');
+            var image = document.getElementById('refImageToCrop');
+            
+            if (currentCropper) {
+                currentCropper.destroy();
+                currentCropper = null;
+            }
+            
+            image.src = e.target.result;
+            
+            // Tampilkan modal terlebih dahulu agar container terbentuk secara fisik 
+            modal.classList.remove('hidden');
+            
+            // Menginisialisasi Cropper hanya SETELAH foto benar-benar dimuat ke container
+            image.onload = function() {
+                if (currentCropper) {
+                    currentCropper.destroy();
+                }
+                currentCropper = new Cropper(image, {
+                    aspectRatio: 1, 
+                    viewMode: 1,    
+                    autoCropArea: 1,
+                    background: false,
+                    responsive: true,
+                    checkOrientation: false
+                });
+            };
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    function closeCropperModal() {
+        document.getElementById('modalCropper').classList.add('hidden');
+        if (currentCropper) {
+            currentCropper.destroy();
+            currentCropper = null;
+        }
+    }
+
+    function saveCrop() {
+        if (!currentCropper) return;
+        
+        var canvas = currentCropper.getCroppedCanvas({
+            width: 512,
+            height: 512,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high'
+        });
+        
+        var base64 = canvas.toDataURL('image/jpeg', 0.9);
+        document.getElementById(cropTargetId).value = base64;
+        
+        var previewImg = document.getElementById(cropTargetId + '_preview');
+        if (previewImg) {
+            previewImg.src = base64;
+            previewImg.classList.remove('hidden');
+        }
+        
+        closeCropperModal();
+    }
+
+
+    /** Helper: Update Penomoran Baris Tabel (Tanpa Re-Render Ulang) **/
+    function updateRowNumbers(tableId, rowPrefix) {
+        var tbody = document.getElementById(tableId);
+        if(!tbody) return;
+        var rows = tbody.querySelectorAll('tr[id^="'+rowPrefix+'"]');
+        rows.forEach(function(row, index) {
+            var noTd = row.querySelector('.row-number');
+            if(noTd) noTd.innerText = index + 1;
+        });
+        if(rows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-500 font-medium">Data tidak ditemukan.</td></tr>';
+        }
+    }
+
+    /** ================= ZETTBOT: VARIABEL GLOBAL, CACHE, & LOCKING ================= **/
+    var dataGuruCache = [];
+    var isGuruLoaded = false;
+    var isFetchingGuru = false; 
+    var modeGuru = 'tambah';
+    var idGuruAktif = '';
+    
+    var dataSiswaCache = [];
+    var isSiswaLoaded = false;
+    var isFetchingSiswa = false; 
+    var modeSiswa = 'tambah';
+    var idSiswaAktif = '';
+
+    var dataMapingCache = [];
+    var isMapingLoaded = false;
+    var isFetchingMaping = false; 
+    var listGuruForMaping = [];
+    var modeMaping = 'tambah';
+    var idMapingAktif = '';
+    
+    var availableKelasList = [];
+    var selectedKelasMaping = [];
+
+    var listTahunAjaranCache = [];
+    var mapKelasPerTaCache = {};
+
+    function preloadDataReferensi() {
+        fetchDataGuru(true);
+        fetchDataSiswa(true);
+        fetchDataMaping(true);
+    }
+
+    /** ================= LOGIKA GURU ================= **/
+    
+    function addMapelInput(nama) {
+        if (typeof nama === 'undefined') nama = '';
+        var cont = document.getElementById('containerMapelInputs');
+        var div = document.createElement('div');
+        div.className = "flex gap-2 mb-2 animate-fade";
+        
+        div.innerHTML = '<input type="text" placeholder="Nama Mapel (Contoh: Matematika Wajib)" value="'+nama+'" class="mapel-nama flex-1 border p-2.5 rounded-xl text-xs bg-white outline-none focus:ring-1 focus:ring-indigo-500"><button type="button" onclick="this.parentElement.remove()" class="text-red-500 bg-red-50 hover:bg-red-100 rounded-xl px-3 transition"><i class="fa-solid fa-trash"></i></button>';
+        cont.appendChild(div);
+    }
+
+    function showMapelDetail(id) {
+        var data = dataGuruCache.find(function(x) { return x.id_guru === id; });
+        if(!data) return;
+        var body = document.getElementById('listMapelBody');
+        
+        body.innerHTML = data.mapel_data.map(function(m, i) { 
+            return '<tr><td class="p-2 border border-slate-100 text-center text-slate-500">'+(i+1)+'</td><td class="p-2 border border-slate-100 font-medium">'+m+'</td></tr>'; 
+        }).join('');
+        document.getElementById('modalMapelDetail').classList.remove('hidden');
+    }
+
+    function buildRowGuru(g, i) {
+        var avatar = g.foto ? g.foto : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(g.nama_guru) + '&background=e0e7ff&color=4f46e5';
+        return '<tr id="row-guru-'+g.id_guru+'" class="border-b border-slate-50 hover:bg-slate-50/80 transition-colors text-sm">' +
+            '<td class="p-4 text-center font-medium text-slate-500 row-number">'+i+'</td>' +
+            '<td class="p-4"><img src="'+avatar+'" class="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover"></td>' +
+            '<td class="p-4 font-semibold text-slate-700">'+g.nip+'</td>' +
+            '<td class="p-4 font-bold text-slate-800">'+g.nama_guru+'</td>' +
+            '<td class="p-4 text-center"><button onclick="showMapelDetail(\''+g.id_guru+'\')" class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Lihat Mapel"><i class="fa-solid fa-eye"></i></button></td>' +
+            '<td class="p-4 flex justify-center gap-2">' +
+                '<button onclick="showGuruModal(\'edit\', \''+g.id_guru+'\')" class="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white transition-all shadow-sm" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>' +
+                '<button onclick="hapusGuru(\''+g.id_guru+'\')" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Hapus"><i class="fa-solid fa-trash-can text-xs"></i></button>' +
+            '</td></tr>';
+    }
+
+    function renderTableGuru(forceRender) {
+        var tbody = document.getElementById('tableDataGuru');
+        if(!tbody) return;
+        
+        var searchVal = document.getElementById('searchGuru') ? document.getElementById('searchGuru').value.toLowerCase() : '';
+        
+        if (!forceRender && tbody.getAttribute('data-rendered') === 'true' && tbody.getAttribute('data-search') === searchVal) {
+            return;
+        }
+
+        var filtered = dataGuruCache.filter(function(g) {
+            return g.nip.toLowerCase().indexOf(searchVal) !== -1 || g.nama_guru.toLowerCase().indexOf(searchVal) !== -1;
+        });
+
+        if(filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-500 font-medium">Data Guru tidak ditemukan.</td></tr>';
+        } else {
+            tbody.innerHTML = filtered.map(function(g, i) { return buildRowGuru(g, i + 1); }).join('');
+        }
+        
+        tbody.setAttribute('data-rendered', 'true');
+        tbody.setAttribute('data-search', searchVal);
+    }
+
+    // ZettBOT Update: Ditambahkan isSilent parameter untuk auto-sync background tanpa muncul spinner loading
+    function fetchDataGuru(isPreload, isSilent) {
+        var tbody = document.getElementById('tableDataGuru');
+        
+        if (isGuruLoaded && !isSilent) {
+            if (tbody && !isPreload) renderTableGuru(); 
+            return;
+        }
+
+        if (isFetchingGuru) return; 
+        isFetchingGuru = true;
+        
+        if (tbody && !isPreload && !isSilent) tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8"><div class="loader-spin border-slate-300 border-t-indigo-600 mx-auto"></div><p class="text-slate-500 mt-2 text-sm">Memuat data Guru...</p></td></tr>';
+        
+        try {
+            var timeoutFailsafe = setTimeout(function() {
+                isFetchingGuru = false;
+                if(tbody && !isPreload && !isSilent) tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-amber-600 bg-amber-50 rounded-xl"><span class="font-bold">Waktu Habis (Timeout)</span></td></tr>';
+            }, 15000);
+            
+            google.script.run
+            .withSuccessHandler(function(res) {
+                clearTimeout(timeoutFailsafe);
+                isFetchingGuru = false;
+                if(res && res.status === 'success') {
+                    var newData = Array.isArray(res.data) ? res.data : [];
+                    var isChanged = JSON.stringify(newData) !== JSON.stringify(dataGuruCache);
+                    
+                    dataGuruCache = newData;
+                    listGuruForMaping = dataGuruCache; 
+                    isGuruLoaded = true;
+                    
+                    // Render jika ini load pertama kali atau data cache server berbeda (ada perubahan dari user lain)
+                    if (document.getElementById('tableDataGuru') && (!isPreload || isChanged)) renderTableGuru(true); 
+                } else {
+                    if (document.getElementById('tableDataGuru') && !isPreload && !isSilent) document.getElementById('tableDataGuru').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Error Server: ' + (res ? res.message : '') + '</td></tr>';
+                }
+            })
+            .withFailureHandler(function(err) {
+                clearTimeout(timeoutFailsafe);
+                isFetchingGuru = false;
+                if (document.getElementById('tableDataGuru') && !isPreload && !isSilent) document.getElementById('tableDataGuru').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Gagal Koneksi: ' + err.message + '</td></tr>';
+            })
+            .getDataGuruZett();
+        } catch(e) {
+            isFetchingGuru = false;
+            if (tbody && !isPreload && !isSilent) tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Error Sistem JS: ' + e.message + '</td></tr>';
+        }
+    }
+
+    function showGuruModal(mode, id) {
+        if (typeof mode === 'undefined') mode = 'tambah';
+        modeGuru = mode;
+        document.getElementById('formGuru').reset();
+        document.getElementById('containerMapelInputs').innerHTML = '';
+        
+        var imgPreview = document.getElementById('guru_foto_val_preview');
+        
+        if (mode === 'edit' && id) {
+            var data = dataGuruCache.find(function(x){ return x.id_guru === id; });
+            if(data) {
+                idGuruAktif = data.id_guru;
+                document.getElementById('guruModalTitle').innerText = 'Edit Data Guru';
+                document.getElementById('guru_nip').value = data.nip || '';
+                document.getElementById('guru_nama').value = data.nama_guru || '';
+                document.getElementById('guru_foto_val').value = data.foto || '';
+                document.getElementById('guru_username').value = data.username || '';
+                document.getElementById('guru_password').value = data.password || '';
+                
+                if (data.foto) {
+                    imgPreview.src = data.foto;
+                    imgPreview.classList.remove('hidden');
+                } else {
+                    imgPreview.src = '';
+                    imgPreview.classList.add('hidden');
+                }
+
+                if(data.mapel_data && data.mapel_data.length > 0) {
+                    data.mapel_data.forEach(function(m) { addMapelInput(m); });
+                }
+            }
+        } else {
+            idGuruAktif = '';
+            document.getElementById('guruModalTitle').innerText = 'Tambah Data Guru';
+            addMapelInput('');
+            imgPreview.src = '';
+            imgPreview.classList.add('hidden');
+        }
+        document.getElementById('modalFormGuru').classList.remove('hidden');
+    }
+
+    function closeGuruModal() { document.getElementById('modalFormGuru').classList.add('hidden'); }
+
+    function saveDataGuru(e) {
+        e.preventDefault();
+        var mapels = [];
+        
+        document.querySelectorAll('#containerMapelInputs div').forEach(function(div) {
+            var n = div.querySelector('.mapel-nama').value.trim();
+            if(n) mapels.push(n); 
+        });
+        
+        var nip = document.getElementById('guru_nip').value.trim();
+        var payload = {
+            nip: nip, 
+            nama_guru: document.getElementById('guru_nama').value.trim(),
+            mapel_data: mapels, 
+            foto: document.getElementById('guru_foto_val').value.trim(),
+            username: document.getElementById('guru_username').value.trim() || nip,
+            password: document.getElementById('guru_password').value.trim() || nip
+        };
+
+        var btn = document.getElementById('btnSimpanGuru');
+        var span = btn.querySelector('span');
+        btn.disabled = true; span.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...';
+
+        var act = modeGuru === 'edit' ? 'updateDataGuruZett' : 'simpanDataGuruZett';
+        if(modeGuru === 'edit') payload.id_guru = idGuruAktif;
+        
+        google.script.run.withSuccessHandler(function(res) {
+            btn.disabled = false; span.innerHTML = 'Simpan Data Guru';
+            closeGuruModal();
+            
+            if(res && res.status === 'success') {
+                Toast.fire({ icon: 'success', title: 'Berhasil disimpan' });
+                
+                if(modeGuru === 'edit') {
+                    var idx = dataGuruCache.findIndex(function(x) { return x.id_guru === payload.id_guru; });
+                    if(idx !== -1) {
+                        dataGuruCache[idx] = Object.assign(dataGuruCache[idx], payload);
+                    }
+                } else {
+                    payload.id_guru = res.id;
+                    dataGuruCache.push(payload);
+                }
+                renderTableGuru(true);
+            } else {
+                Toast.fire({ icon: 'error', title: res ? res.message : 'Gagal menyimpan' });
+            }
+        })[act](payload);
+    }
+
+    function hapusGuru(id) {
+        Swal.fire({title:'Hapus?', icon:'warning', showCancelButton:true}).then(function(r) {
+            if(r.isConfirmed) {
+                Swal.fire({title: 'Menghapus...', showConfirmButton: false, didOpen: function() { Swal.showLoading(); }});
+                google.script.run.withSuccessHandler(function(res) { 
+                    Swal.close(); 
+                    if(res && res.status === 'success') {
+                        Toast.fire({ icon: 'success', title: 'Data berhasil dihapus' });
+                        dataGuruCache = dataGuruCache.filter(function(x) { return x.id_guru !== id; });
+                        renderTableGuru(true);
+                    } else {
+                        Toast.fire({ icon: 'error', title: res ? res.message : 'Gagal menghapus' });
+                    }
+                }).hapusDataGuruZett(id);
+            }
+        });
+    }
+
+    /** ================= LOGIKA SISWA ================= **/
+
+    function populateFilterKelasSiswa() {
+        var sel = document.getElementById('filterKelasSiswa');
+        if(!sel) return;
+        var unique = [];
+        dataSiswaCache.forEach(function(s) {
+            if(s.kelas && s.kelas !== '-' && unique.indexOf(s.kelas) === -1) unique.push(s.kelas);
+        });
+        unique.sort();
+        var currentVal = sel.value;
+        var html = '<option value="">Semua Kelas</option>';
+        unique.forEach(function(k) { html += '<option value="'+k+'">'+k+'</option>'; });
+        sel.innerHTML = html;
+        if(unique.indexOf(currentVal) !== -1) sel.value = currentVal;
+    }
+
+    function buildRowSiswa(s, i) {
+        var avatar = s.foto ? s.foto : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.nama_siswa) + '&background=e0e7ff&color=4f46e5';
+        return '<tr id="row-siswa-'+s.id_siswa+'" class="border-b border-slate-50 hover:bg-slate-50/80 transition-colors text-sm">' +
+            '<td class="p-4 text-center font-medium text-slate-500 row-number">'+i+'</td>' +
+            '<td class="p-4"><img src="'+avatar+'" class="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover"></td>' +
+            '<td class="p-4 font-semibold text-slate-700">'+s.nis+'</td>' +
+            '<td class="p-4 font-bold text-slate-800">'+s.nama_siswa+'</td>' +
+            '<td class="p-4">'+s.kelas+'</td>' +
+            '<td class="p-4 flex justify-center gap-2">' +
+                '<button onclick="showSiswaModal(\'edit\', \''+s.id_siswa+'\')" class="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white transition-all shadow-sm" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>' +
+                '<button onclick="hapusSiswa(\''+s.id_siswa+'\')" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Hapus"><i class="fa-solid fa-trash-can text-xs"></i></button>' +
+            '</td></tr>';
+    }
+
+    function renderTableSiswa(forceRender) {
+        var tbody = document.getElementById('tableDataSiswa');
+        if(!tbody) return;
+        
+        var searchVal = document.getElementById('searchSiswa') ? document.getElementById('searchSiswa').value.toLowerCase() : '';
+        var kelasVal = document.getElementById('filterKelasSiswa') ? document.getElementById('filterKelasSiswa').value : '';
+
+        if (!forceRender && tbody.getAttribute('data-rendered') === 'true' && tbody.getAttribute('data-search') === searchVal && tbody.getAttribute('data-kelas') === kelasVal) {
+            return;
+        }
+
+        var filtered = dataSiswaCache.filter(function(s) {
+            var matchSearch = s.nis.toLowerCase().indexOf(searchVal) !== -1 || s.nama_siswa.toLowerCase().indexOf(searchVal) !== -1;
+            var matchKelas = kelasVal === '' || s.kelas === kelasVal;
+            return matchSearch && matchKelas;
+        });
+
+        if(filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-500 font-medium">Data Siswa tidak ditemukan.</td></tr>';
+        } else {
+            tbody.innerHTML = filtered.map(function(s, i) { return buildRowSiswa(s, i + 1); }).join('');
+        }
+
+        tbody.setAttribute('data-rendered', 'true');
+        tbody.setAttribute('data-search', searchVal);
+        tbody.setAttribute('data-kelas', kelasVal);
+    }
+
+    // ZettBOT Update: Ditambahkan isSilent parameter
+    function fetchDataSiswa(isPreload, isSilent) {
+        var tbody = document.getElementById('tableDataSiswa');
+        
+        if (isSiswaLoaded && !isSilent) {
+            if (document.getElementById('tableDataSiswa') && !isPreload) {
+                populateFilterKelasSiswa();
+                renderTableSiswa(); 
+            }
+            return;
+        }
+
+        if (isFetchingSiswa) return;
+        isFetchingSiswa = true;
+
+        if(tbody && !isPreload && !isSilent) tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8"><div class="loader-spin border-slate-300 border-t-indigo-600 mx-auto"></div><p class="text-slate-500 mt-2 text-sm">Memuat data Siswa...</p></td></tr>';
+        
+        try {
+            var timeoutFailsafe = setTimeout(function() {
+                isFetchingSiswa = false;
+                if(tbody && !isPreload && !isSilent) tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-amber-600 bg-amber-50 rounded-xl"><span class="font-bold">Waktu Habis (Timeout)</span></td></tr>';
+            }, 15000);
+
+            google.script.run
+            .withSuccessHandler(function(res) {
+                clearTimeout(timeoutFailsafe);
+                isFetchingSiswa = false;
+                if(res && res.status === 'success') {
+                    var newData = Array.isArray(res.data) ? res.data : [];
+                    var isChanged = JSON.stringify(newData) !== JSON.stringify(dataSiswaCache);
+                    
+                    dataSiswaCache = newData;
+                    isSiswaLoaded = true; 
+                    
+                    var uniqueKelasList = [];
+                    dataSiswaCache.forEach(function(s) {
+                        if (s.kelas && s.kelas !== '-' && uniqueKelasList.indexOf(s.kelas) === -1) uniqueKelasList.push(s.kelas);
+                    });
+                    availableKelasList = uniqueKelasList.sort();
+
+                    if(document.getElementById('tableDataSiswa') && (!isPreload || isChanged)) {
+                        populateFilterKelasSiswa();
+                        renderTableSiswa(true); 
+                    }
+                } else { 
+                    if(document.getElementById('tableDataSiswa') && !isPreload && !isSilent) document.getElementById('tableDataSiswa').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Error Server</td></tr>'; 
+                }
+            })
+            .withFailureHandler(function(err) {
+                clearTimeout(timeoutFailsafe);
+                isFetchingSiswa = false;
+                if(document.getElementById('tableDataSiswa') && !isPreload && !isSilent) document.getElementById('tableDataSiswa').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Gagal Koneksi Server</td></tr>';
+            })
+            .getDataSiswaZett();
+        } catch(e) {
+            isFetchingSiswa = false;
+            if(tbody && !isPreload && !isSilent) tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Error Sistem JS</td></tr>';
+        }
+    }
+
+    function showSiswaModal(mode, id) {
+        if (typeof mode === 'undefined') mode = 'tambah';
+        modeSiswa = mode;
+        document.getElementById('formSiswa').reset();
+        
+        var imgPreview = document.getElementById('siswa_foto_val_preview');
+        
+        if (mode === 'edit' && id) {
+            var data = dataSiswaCache.find(function(x){ return x.id_siswa === id; });
+            if(data) {
+                idSiswaAktif = data.id_siswa;
+                document.getElementById('siswaModalTitle').innerText = 'Edit Data Siswa';
+                document.getElementById('siswa_nis').value = data.nis || '';
+                document.getElementById('siswa_nama').value = data.nama_siswa || '';
+                document.getElementById('siswa_kelas').value = data.kelas || '';
+                document.getElementById('siswa_foto_val').value = data.foto || '';
+                document.getElementById('siswa_username').value = data.username || '';
+                document.getElementById('siswa_password').value = data.password || '';
+                
+                if (data.foto) {
+                    imgPreview.src = data.foto;
+                    imgPreview.classList.remove('hidden');
+                } else {
+                    imgPreview.src = '';
+                    imgPreview.classList.add('hidden');
+                }
+            }
+        } else {
+            idSiswaAktif = '';
+            document.getElementById('siswaModalTitle').innerText = 'Tambah Data Siswa';
+            imgPreview.src = '';
+            imgPreview.classList.add('hidden');
+        }
+        document.getElementById('modalFormSiswa').classList.remove('hidden');
+    }
+
+    function closeSiswaModal() { document.getElementById('modalFormSiswa').classList.add('hidden'); }
+
+    function saveDataSiswa(e) {
+        e.preventDefault();
+        var nis = document.getElementById('siswa_nis').value.trim();
+        var payload = {
+            nis: nis, 
+            nama_siswa: document.getElementById('siswa_nama').value.trim(),
+            kelas: document.getElementById('siswa_kelas').value.trim(), 
+            foto: document.getElementById('siswa_foto_val').value.trim(),
+            username: document.getElementById('siswa_username').value.trim() || nis, 
+            password: document.getElementById('siswa_password').value.trim() || nis
+        };
+
+        var btn = document.getElementById('btnSimpanSiswa');
+        var span = btn.querySelector('span');
+        btn.disabled = true; span.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...';
+
+        var act = modeSiswa === 'edit' ? 'updateDataSiswaZett' : 'simpanDataSiswaZett';
+        if(modeSiswa === 'edit') payload.id_siswa = idSiswaAktif;
+        
+        google.script.run.withSuccessHandler(function(res) {
+            btn.disabled = false; span.innerHTML = 'Simpan Data Siswa';
+            closeSiswaModal(); 
+            
+            if(res && res.status === 'success') {
+                Toast.fire({ icon: 'success', title: 'Berhasil disimpan' });
+                
+                if(modeSiswa === 'edit') {
+                    var idx = dataSiswaCache.findIndex(function(x) { return x.id_siswa === payload.id_siswa; });
+                    if(idx !== -1) {
+                        dataSiswaCache[idx] = Object.assign(dataSiswaCache[idx], payload);
+                    }
+                } else {
+                    payload.id_siswa = res.id;
+                    dataSiswaCache.push(payload);
+                }
+                populateFilterKelasSiswa(); 
+                renderTableSiswa(true); 
+            } else {
+                Toast.fire({ icon: 'error', title: res ? res.message : 'Gagal menyimpan' });
+            }
+        })[act](payload);
+    }
+
+    function hapusSiswa(id) {
+        Swal.fire({title:'Hapus?', text:'Data Siswa & Akun akan terhapus!', icon:'warning', showCancelButton:true}).then(function(r) {
+            if(r.isConfirmed) {
+                Swal.fire({title: 'Menghapus...', showConfirmButton: false, didOpen: function() { Swal.showLoading(); }});
+                google.script.run.withSuccessHandler(function(res) { 
+                    Swal.close(); 
+                    if(res && res.status === 'success') {
+                        Toast.fire({ icon: 'success', title: 'Siswa berhasil dihapus' });
+                        dataSiswaCache = dataSiswaCache.filter(function(x) { return x.id_siswa !== id; });
+                        populateFilterKelasSiswa(); 
+                        renderTableSiswa(true);
+                    } else {
+                        Toast.fire({ icon: 'error', title: res ? res.message : 'Gagal menghapus' });
+                    }
+                }).hapusDataSiswaZett(id);
+            }
+        });
+    }
+
+    // ZettBOT: Logika Input Massal Siswa 
+    function showMassalSiswaModal() {
+        document.getElementById('textareaMassalSiswa').value = '';
+        document.getElementById('progressAreaSiswa').classList.add('hidden');
+        document.getElementById('progressBarSiswa').style.width = '0%';
+        document.getElementById('progressTextSiswa').innerText = '0 / 0';
+        document.getElementById('progressLabelSiswa').innerText = 'Menyimpan data...';
+        document.getElementById('modalMassalSiswa').classList.remove('hidden');
+    }
+
+    function closeMassalSiswaModal() { 
+        document.getElementById('modalMassalSiswa').classList.add('hidden'); 
+    }
+
+    function sendChunkSiswaData(chunkArray) {
+        return new Promise(function(resolve, reject) {
+            google.script.run
+            .withSuccessHandler(function(res) {
+                if(res && res.status === 'success') resolve(res);
+                else reject(new Error(res ? res.message : 'Unknown Server Error'));
+            })
+            .withFailureHandler(function(err) { reject(err); })
+            .simpanDataSiswaMassalZett(chunkArray);
+        });
+    }
+
+    async function prosesMassalSiswa() {
+        var textData = document.getElementById('textareaMassalSiswa').value.trim();
+        if(!textData) {
+            Toast.fire({ icon: 'warning', title: 'Kotak isian masih kosong!' });
+            return;
+        }
+
+        var rows = textData.split('\n');
+        var validData = [];
+        
+        for(var i=0; i<rows.length; i++) {
+            var rowContent = rows[i].trim();
+            if(!rowContent) continue; 
+            
+            var cols = rowContent.split('\t');
+            if(cols.length >= 3 && cols[0].trim() !== '') {
+                validData.push([cols[0].trim(), cols[1].trim(), cols[2].trim()]);
+            } else {
+                Toast.fire({ icon: 'error', title: 'Baris ' + (i+1) + ' formatnya salah. Pastikan copy/paste tepat 3 kolom dari Excel.' });
+                return;
+            }
+        }
+
+        var totalData = validData.length;
+        if(totalData === 0) {
+            Toast.fire({ icon: 'warning', title: 'Tidak ada data valid yang dapat diproses.' });
+            return;
+        }
+
+        var btn = document.getElementById('btnProsesMassalSiswa');
+        var span = btn.querySelector('span');
+        var icon = btn.querySelector('i');
+        
+        btn.disabled = true;
+        icon.className = 'fa-solid fa-spinner fa-spin';
+        span.innerText = 'Memproses...';
+        
+        document.getElementById('progressAreaSiswa').classList.remove('hidden');
+        var progressLabel = document.getElementById('progressLabelSiswa');
+        var progressText = document.getElementById('progressTextSiswa');
+        var progressBar = document.getElementById('progressBarSiswa');
+        
+        var chunkSize = 50; 
+        var processedCount = 0;
+
+        try {
+            for(var j=0; j<totalData; j+=chunkSize) {
+                var chunk = validData.slice(j, j+chunkSize);
+                progressLabel.innerText = 'Mengirim paket data ke server...';
+                
+                await sendChunkSiswaData(chunk);
+                
+                processedCount += chunk.length;
+                var percent = Math.round((processedCount / totalData) * 100);
+                
+                progressBar.style.width = percent + '%';
+                progressText.innerText = processedCount + ' / ' + totalData;
+                progressLabel.innerText = 'Paket tersimpan.';
+            }
+            
+            closeMassalSiswaModal();
+            isSiswaLoaded = false; 
+            fetchDataSiswa(); 
+            Toast.fire({ icon: 'success', title: totalData + ' data Siswa berhasil disimpan massal.' });
+            
+        } catch(error) {
+            Toast.fire({ icon: 'error', title: error.message });
+        } finally {
+            btn.disabled = false;
+            icon.className = 'fa-solid fa-file-excel';
+            span.innerText = 'Proses Data Massal';
+        }
+    }
+
+    // ZettBOT: Logika Naik Kelas / Pindah TA (Arsip)
+    function showNaikKelasModal() {
+        document.getElementById('formNaikKelas').reset();
+        document.getElementById('modalNaikKelas').classList.remove('hidden');
+        
+        var selTa = document.getElementById('naik_ta_asal');
+        selTa.innerHTML = '<option value="">Memuat Tahun Ajaran...</option>';
+        var selKelas = document.getElementById('naik_kelas_asal');
+        selKelas.innerHTML = '<option value="">Pilih Tahun Ajaran terlebih dahulu...</option>';
+
+        google.script.run.withSuccessHandler(function(res) {
+            if (res && res.status === 'success') {
+                listTahunAjaranCache = res.data;
+                selTa.innerHTML = '<option value="">Pilih Tahun Ajaran Asal...</option>' + 
+                    listTahunAjaranCache.map(function(ta) { 
+                        return '<option value="'+ta.id+'">'+ta.tahun+' ('+ta.semester+') '+(ta.status==='Aktif'?' - [Aktif]':'')+'</option>'; 
+                    }).join('');
+            }
+        }).getTahunAjaranData();
+
+        google.script.run.withSuccessHandler(function(res) {
+            if (res && res.status === 'success') { mapKelasPerTaCache = res.data; }
+        }).getKelasPerTaZett();
+    }
+
+    function onTaAsalSelected(sel) {
+        var taId = sel.value;
+        var selKelas = document.getElementById('naik_kelas_asal');
+        if (taId && mapKelasPerTaCache[taId]) {
+            var kelasList = mapKelasPerTaCache[taId].sort();
+            selKelas.innerHTML = '<option value="">Pilih Kelas Asal...</option>' + 
+                kelasList.map(function(k) { return '<option value="'+k+'">'+k+'</option>'; }).join('');
+        } else {
+            selKelas.innerHTML = '<option value="">Tidak ada data kelas di TA ini / Pilih TA</option>';
+        }
+    }
+
+    function closeNaikKelasModal() { document.getElementById('modalNaikKelas').classList.add('hidden'); }
+
+    function prosesNaikKelas(e) {
+        e.preventDefault();
+        var taAsal = document.getElementById('naik_ta_asal').value;
+        var asal = document.getElementById('naik_kelas_asal').value;
+        var tujuan = document.getElementById('naik_kelas_tujuan').value.trim();
+        
+        if(!taAsal || !asal || !tujuan) {
+            Toast.fire({ icon: 'warning', title: 'Pilih TA, Kelas asal, and isi kelas tujuan!' });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Proses Pindah TA/Kelas?',
+            text: 'Siswa dari kelas ' + asal + ' akan diarsip di TA asal, dan disalin ke TA Aktif sebagai kelas ' + tujuan + '.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Proses Sekarang!',
+            confirmButtonColor: '#f59e0b'
+        }).then(function(r) {
+            if(r.isConfirmed) {
+                var btn = document.getElementById('btnSimpanNaikKelas');
+                var span = btn.querySelector('span');
+                btn.disabled = true; span.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Memproses...';
+
+                google.script.run.withSuccessHandler(function(res) {
+                    btn.disabled = false; span.innerHTML = 'Proses Pindah Kelas';
+                    if(res && res.status === 'success') {
+                        closeNaikKelasModal();
+                        isSiswaLoaded = false; 
+                        fetchDataSiswa();
+                        Toast.fire({ icon: 'success', title: res.message || 'Data kelas berhasil diperbarui.' });
+                    } else {
+                        Toast.fire({ icon: 'error', title: res ? res.message : 'Terjadi kesalahan.' });
+                    }
+                }).withFailureHandler(function(err) {
+                    btn.disabled = false; span.innerHTML = 'Proses Pindah Kelas';
+                    Toast.fire({ icon: 'error', title: err.message });
+                }).naikKelasSiswaZett({taAsal: taAsal, kelasAsal: asal, kelasTujuan: tujuan});
+            }
+        });
+    }
+
+    /** ================= LOGIKA MAPING GURU ================= **/
+
+    document.addEventListener('click', function(e) {
+        var dropdown = document.getElementById('maping_kelas_dropdown');
+        var search = document.getElementById('maping_kelas_search');
+        if(dropdown && !dropdown.contains(e.target) && e.target !== search) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    function renderKelasDropdown(filterText) {
+        var dropdown = document.getElementById('maping_kelas_dropdown');
+        var html = '';
+        var searchText = (filterText || '').toLowerCase();
+        
+        var filteredList = availableKelasList.filter(function(k) { return k.toLowerCase().indexOf(searchText) !== -1; });
+
+        if(filteredList.length === 0) {
+            html = '<div class="p-3 text-sm text-slate-500 text-center">Kelas tidak ditemukan</div>';
+        } else {
+            filteredList.forEach(function(k) {
+                if(selectedKelasMaping.indexOf(k) === -1) {
+                    html += '<div class="p-3 text-sm font-medium hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer border-b border-slate-50 last:border-0 transition-colors" onclick="selectKelasMaping(\''+k+'\')">'+k+'</div>';
+                }
+            });
+            if(html === '') html = '<div class="p-3 text-sm text-slate-500 text-center bg-slate-50">Semua kelas sudah dipilih</div>';
+        }
+        dropdown.innerHTML = html;
+    }
+
+    function selectKelasMaping(k) {
+        if(selectedKelasMaping.indexOf(k) === -1) { selectedKelasMaping.push(k); updateKelasTags(); }
+        document.getElementById('maping_kelas_search').value = '';
+        document.getElementById('maping_kelas_search').focus();
+        renderKelasDropdown('');
+    }
+
+    function removeKelasMaping(k) {
+        var idx = selectedKelasMaping.indexOf(k);
+        if(idx !== -1) selectedKelasMaping.splice(idx, 1);
+        updateKelasTags();
+        renderKelasDropdown(document.getElementById('maping_kelas_search').value);
+    }
+
+    function updateKelasTags() {
+        var container = document.getElementById('maping_kelas_tags');
+        container.innerHTML = selectedKelasMaping.map(function(k) {
+            return '<span class="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2">' + k + 
+                   ' <i class="fa-solid fa-xmark cursor-pointer hover:text-red-500 transition-colors text-sm" onclick="removeKelasMaping(\''+k+'\')"></i></span>';
+        }).join('');
+        document.getElementById('maping_kelas').value = selectedKelasMaping.join(', ');
+    }
+
+    function showKelasDropdown() {
+        var dropdown = document.getElementById('maping_kelas_dropdown');
+        dropdown.classList.remove('hidden');
+        renderKelasDropdown(document.getElementById('maping_kelas_search').value);
+    }
+
+    function filterKelasDropdown() { renderKelasDropdown(document.getElementById('maping_kelas_search').value); }
+
+    function showKelasDetail(id) {
+        var data = dataMapingCache.find(function(x) { return x.id_maping === id; });
+        if(!data || !data.kelas) return;
+        var kelasArr = data.kelas.split(', ');
+        var body = document.getElementById('listKelasBody');
+        body.innerHTML = kelasArr.map(function(k, i) { 
+            return '<tr><td class="p-2 border border-slate-100 text-center text-slate-500">'+(i+1)+'</td><td class="p-2 border border-slate-100 font-medium">'+k+'</td></tr>'; 
+        }).join('');
+        document.getElementById('modalKelasDetail').classList.remove('hidden');
+    }
+
+    function buildRowMaping(m, i) {
+        return '<tr id="row-maping-'+m.id_maping+'" class="border-b border-slate-50 hover:bg-slate-50/80 transition-colors text-sm">' +
+            '<td class="p-4 text-center font-medium text-slate-500 row-number">'+i+'</td>' +
+            '<td class="p-4 font-semibold text-slate-700">'+m.nip+'</td>' +
+            '<td class="p-4 font-bold text-slate-800">'+m.nama_guru+'</td>' +
+            '<td class="p-4">'+m.mapel+'</td>' +
+            '<td class="p-4 text-center"><button onclick="showKelasDetail(\''+m.id_maping+'\')" class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Lihat Kelas"><i class="fa-solid fa-eye"></i></button></td>' +
+            '<td class="p-4 flex justify-center gap-2">' +
+                '<button onclick="showMapingModal(\'edit\', \''+m.id_maping+'\')" class="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white transition-all shadow-sm" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>' +
+                '<button onclick="hapusMaping(\''+m.id_maping+'\')" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Hapus"><i class="fa-solid fa-trash-can text-xs"></i></button>' +
+            '</td></tr>';
+    }
+
+    function renderTableMaping(forceRender) {
+        var tbody = document.getElementById('tableDataMaping');
+        if(!tbody) return;
+        
+        var searchVal = document.getElementById('searchMaping') ? document.getElementById('searchMaping').value.toLowerCase() : '';
+
+        if (!forceRender && tbody.getAttribute('data-rendered') === 'true' && tbody.getAttribute('data-search') === searchVal) {
+            return;
+        }
+
+        var filtered = dataMapingCache.filter(function(m) {
+            return m.nama_guru.toLowerCase().indexOf(searchVal) !== -1 || m.mapel.toLowerCase().indexOf(searchVal) !== -1;
+        });
+
+        if(filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-500 font-medium">Data Maping tidak ditemukan.</td></tr>';
+        } else {
+            tbody.innerHTML = filtered.map(function(m, i) { return buildRowMaping(m, i + 1); }).join('');
+        }
+
+        tbody.setAttribute('data-rendered', 'true');
+        tbody.setAttribute('data-search', searchVal);
+    }
+
+    // ZettBOT Update: Ditambahkan isSilent parameter
+    function fetchDataMaping(isPreload, isSilent) {
+        var tbody = document.getElementById('tableDataMaping');
+        
+        if (isMapingLoaded && !isSilent) {
+            if (document.getElementById('tableDataMaping') && !isPreload) renderTableMaping();
+            if (!isGuruLoaded) fetchDataGuru(true, isSilent);
+            if (!isSiswaLoaded) fetchDataSiswa(true, isSilent);
+            return;
+        }
+
+        if (isFetchingMaping) return;
+        isFetchingMaping = true;
+
+        if (tbody && !isPreload && !isSilent) tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8"><div class="loader-spin border-slate-300 border-t-indigo-600 mx-auto"></div><p class="text-slate-500 mt-2 text-sm">Memuat data Maping...</p></td></tr>';
+        
+        try {
+            var timeoutFailsafe = setTimeout(function() {
+                isFetchingMaping = false;
+                if(tbody && !isPreload && !isSilent) tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-amber-600 bg-amber-50 rounded-xl"><span class="font-bold">Waktu Habis (Timeout)</span></td></tr>';
+            }, 15000);
+
+            google.script.run.withSuccessHandler(function(res) {
+                clearTimeout(timeoutFailsafe);
+                isFetchingMaping = false;
+                if(res && res.status === 'success') {
+                    var newData = Array.isArray(res.data) ? res.data : [];
+                    var isChanged = JSON.stringify(newData) !== JSON.stringify(dataMapingCache);
+                    
+                    dataMapingCache = newData;
+                    isMapingLoaded = true; 
+                    if (document.getElementById('tableDataMaping') && (!isPreload || isChanged)) renderTableMaping(true);
+                } else { 
+                    if (document.getElementById('tableDataMaping') && !isPreload && !isSilent) document.getElementById('tableDataMaping').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Error Server</td></tr>'; 
+                }
+            }).getDataMapingZett();
+
+            if (!isGuruLoaded) fetchDataGuru(true, isSilent);
+            if (!isSiswaLoaded) fetchDataSiswa(true, isSilent);
+
+        } catch(e) {
+            isFetchingMaping = false;
+            if (tbody && !isPreload && !isSilent) tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">Error Sistem JS: ' + e.message + '</td></tr>';
+        }
+    }
+
+    function showMapingModal(mode, id) {
+        if (typeof mode === 'undefined') mode = 'tambah';
+        modeMaping = mode;
+        document.getElementById('formMaping').reset();
+        
+        selectedKelasMaping = [];
+        updateKelasTags();
+        document.getElementById('maping_kelas_search').value = '';
+        
+        var selGuru = document.getElementById('maping_id_guru');
+        var selMapel = document.getElementById('maping_mapel');
+        
+        selGuru.innerHTML = '<option value="">Pilih Guru...</option>' + 
+            listGuruForMaping.map(function(g) { return '<option value="'+g.id_guru+'">'+g.nama_guru+'</option>'; }).join('');
+            
+        selMapel.innerHTML = '<option value="">Pilih guru terlebih dahulu...</option>';
+        
+        if (mode === 'edit' && id) {
+            var data = dataMapingCache.find(function(x){ return x.id_maping === id; });
+            if(data) {
+                idMapingAktif = data.id_maping;
+                document.getElementById('mapingModalTitle').innerText = 'Edit Maping Guru';
+                selGuru.value = data.id_guru;
+                onGuruSelectedMaping(selGuru); 
+                selMapel.value = data.mapel;
+                
+                if(data.kelas && data.kelas !== '-') {
+                    selectedKelasMaping = data.kelas.split(', ');
+                    updateKelasTags();
+                }
+            }
+        } else {
+            idMapingAktif = '';
+            document.getElementById('mapingModalTitle').innerText = 'Input Maping Guru';
+        }
+        document.getElementById('modalFormMaping').classList.remove('hidden');
+    }
+
+    function closeMapingModal() { document.getElementById('modalFormMaping').classList.add('hidden'); }
+
+    function onGuruSelectedMaping(sel) {
+        var idGuru = sel.value;
+        var guruData = listGuruForMaping.find(function(g) { return g.id_guru === idGuru; });
+        var selMapel = document.getElementById('maping_mapel');
+        
+        if (guruData && guruData.mapel_data && guruData.mapel_data.length > 0) {
+            selMapel.innerHTML = '<option value="">Pilih Mapel...</option>' + 
+                guruData.mapel_data.map(function(m) { return '<option value="'+m+'">'+m+'</option>'; }).join('');
+        } else {
+            selMapel.innerHTML = '<option value="">Guru belum memiliki Mapel / Pilih Guru</option>';
+        }
+    }
+
+    function saveDataMaping(e) {
+        e.preventDefault();
+        var idGuru = document.getElementById('maping_id_guru').value;
+        var guruData = listGuruForMaping.find(function(g) { return g.id_guru === idGuru; });
+        var mapelVal = document.getElementById('maping_mapel').value;
+        var kelasVal = document.getElementById('maping_kelas').value.trim();
+        
+        if(!guruData) { Toast.fire({ icon: 'error', title: 'Silakan pilih guru dengan benar!' }); return; }
+        if(!mapelVal) { Toast.fire({ icon: 'warning', title: 'Silakan pilih Mata Pelajaran!' }); return; }
+        if(!kelasVal) { Toast.fire({ icon: 'warning', title: 'Silakan pilih minimal 1 Kelas!' }); return; }
+
+        var payload = {
+            id_guru: guruData.id_guru,
+            nip: guruData.nip,
+            nama_guru: guruData.nama_guru,
+            mapel: mapelVal,
+            kelas: kelasVal
+        };
+
+        var btn = document.getElementById('btnSimpanMaping');
+        var span = btn.querySelector('span');
+        btn.disabled = true; span.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...';
+
+        var act = modeMaping === 'edit' ? 'updateDataMapingZett' : 'simpanDataMapingZett';
+        if(modeMaping === 'edit') payload.id_maping = idMapingAktif;
+
+        google.script.run.withSuccessHandler(function(res) {
+            btn.disabled = false; span.innerHTML = 'Simpan Maping';
+            closeMapingModal();
+            
+            if(res && res.status === 'success') {
+                Toast.fire({ icon: 'success', title: 'Berhasil disimpan' });
+                
+                if(modeMaping === 'edit') {
+                    var idx = dataMapingCache.findIndex(function(x) { return x.id_maping === payload.id_maping; });
+                    if(idx !== -1) {
+                        dataMapingCache[idx] = Object.assign(dataMapingCache[idx], payload);
+                    }
+                } else {
+                    payload.id_maping = res.id;
+                    dataMapingCache.push(payload);
+                }
+                renderTableMaping(true);
+            } else {
+                Toast.fire({ icon: 'error', title: res ? res.message : 'Gagal menyimpan' });
+            }
+        })[act](payload);
+    }
+
+    function hapusMaping(id) {
+        Swal.fire({title:'Hapus Maping?', text:'Data maping ini akan terhapus!', icon:'warning', showCancelButton:true}).then(function(r) {
+            if(r.isConfirmed) {
+                Swal.fire({title: 'Menghapus...', showConfirmButton: false, didOpen: function() { Swal.showLoading(); }});
+                google.script.run.withSuccessHandler(function(res) { 
+                    Swal.close(); 
+                    if(res && res.status === 'success') {
+                        Toast.fire({ icon: 'success', title: 'Berhasil dihapus' });
+                        dataMapingCache = dataMapingCache.filter(function(x) { return x.id_maping !== id; });
+                        renderTableMaping(true);
+                    } else {
+                        Toast.fire({ icon: 'error', title: res ? res.message : 'Gagal menghapus' });
+                    }
+                }).hapusDataMapingZett(id);
+            }
+        });
+    }
+
+    setTimeout(function() {
+        // Tarikan pertama saat halaman terbuka
+        if (!isGuruLoaded || !isSiswaLoaded || !isMapingLoaded) {
+            preloadDataReferensi();
+        }
+        
+        // ZettBOT: Auto-Sync Background Polling
+        // Sinkronisasi data ke server hanya akan berjalan pada tab/menu yang sedang terbuka di layar.
+        // Mengeksekusi fetch secara 'silent' sehingga data langsung berubah instan tanpa muncul ikon loading
+        setInterval(function() {
+            if (document.getElementById('tableDataGuru')) fetchDataGuru(true, true);
+            if (document.getElementById('tableDataSiswa')) fetchDataSiswa(true, true);
+            if (document.getElementById('tableDataMaping')) fetchDataMaping(true, true);
+        }, 15000); // Sinkronisasi setiap 15 detik
+        
+    }, 500);
+
+</script>
